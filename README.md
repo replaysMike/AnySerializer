@@ -27,7 +27,9 @@ var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>();
 
 Ignoring fields/properties is as easy as using any of the following standard ignores: `[IgnoreDataMember]`, `[NonSerializable]` and `[JsonIgnore]`. Note that `[NonSerializable]` only works on fields, for properties (and/or fields) use `[IgnoreDataMember]`.
 
-If you need a way to copy an object that doesn't involve serialization, try [AnyClone](https://github.com/replaysMike/AnyClone)! To see differences between two serialized objects you can use [AnyDiff](https://github.com/replaysMike/AnyDiff):
+### Other applications
+
+To see differences between two serialized objects you can use [AnyDiff](https://github.com/replaysMike/AnyDiff) on your copied object:
 
 ```csharp
 var object1 = new MyComplexObject(1, "A string");
@@ -40,3 +42,5 @@ object2.Id = 100;
 var diff = AnyDiff.Diff(object1, object2);
 Assert.AreEqual(diff.Count, 1);
 ```
+
+If you need a way to copy an object that doesn't involve serialization, try [AnyClone](https://github.com/replaysMike/AnyClone) which is a pure reflection based cloning library!
