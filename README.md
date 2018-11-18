@@ -17,6 +17,8 @@ PM> Install-Package AnySerializer
 ## Usage
 
 ```csharp
+using AnySerializer;
+
 var originalObject = new SomeComplexTypeWithDeepStructure();
 var bytes = Serializer.Serialize();
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>();
