@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Michael Brown</Authors>
+    <Company>Refactor Software</Company>
+    <Description>Serialize and deserialize any object without decoration/attributes.</Description>
+    <PackageReleaseNotes>Serialize and deserialize any object without decoration/attributes.</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/replaysMike/AnySerializer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/replaysMike/AnySerializer</RepositoryUrl>
+    <PackageTags>serialize deserialize object serialization deserialization refactor software michael brown</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1-beta1" />
+  </ItemGroup>
+
+</Project>
