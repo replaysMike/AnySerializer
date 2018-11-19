@@ -42,5 +42,15 @@ namespace AnySerializer
         {
             return Extensions.SerializerExtensions.Deserialize<T>(stream);
         }
+
+        /// <summary>
+        /// Validate a byte array for valid serialization data
+        /// </summary>
+        /// <param name="bytes">The byte array result from Serialize operation</param>
+        /// <returns></returns>
+        public static bool Validate(byte[] bytes)
+        {
+            return Extensions.SerializerExtensions.Validate(bytes);
+        }
     }
 }

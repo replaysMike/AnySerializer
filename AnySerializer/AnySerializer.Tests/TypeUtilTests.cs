@@ -1,11 +1,9 @@
-﻿using NUnit.Framework;
+﻿using AnySerializer.Tests.TestObjects;
+using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using AnySerializer;
-using static AnySerializer.TypeUtil;
 using System.Collections;
-using AnySerializer.Tests.TestObjects;
+using System.Collections.Generic;
+using static AnySerializer.TypeManagement;
 
 namespace AnySerializer.Tests
 {

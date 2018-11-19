@@ -4,28 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
 {
     public static class TypeUtil
     {
-        private static readonly IDictionary<Type, TypeId> _switch = new Dictionary<Type, TypeId> {
-                        { typeof(bool), TypeId.Bool },
-                        { typeof(byte), TypeId.Byte },
-                        { typeof(short), TypeId.Short },
-                        { typeof(int), TypeId.Int },
-                        { typeof(long), TypeId.Long },
-                        { typeof(float), TypeId.Float },
-                        { typeof(double), TypeId.Double },
-                        { typeof(decimal), TypeId.Decimal },
-                        { typeof(string), TypeId.String },
-                        { typeof(char), TypeId.Char },
-                        { typeof(object), TypeId.Object },
-                        { typeof(Array), TypeId.Array },
-                        { typeof(IEnumerable), TypeId.IEnumerable },
-                        { typeof(IDictionary<,>), TypeId.IDictionary },
-                    };
-
         /// <summary>
         /// Create a new, empty object of a given type
         /// </summary>
@@ -39,6 +23,15 @@ namespace AnySerializer
                 return initializer();
 
             var typeSupport = new TypeSupport(type);
+            // if we are asked to create an instance of an interface, try to initialize using a valid concrete type
+            if (typeSupport.IsInterface)
+            {
+                var concreteType = typeSupport.ConcreteTypes.FirstOrDefault();
+                if (concreteType == null)
+                    throw new InvalidOperationException($"Unable to locate a concrete type for '{typeSupport.Type.FullName}'! Cannot create instance.");
+
+                typeSupport = new TypeSupport(concreteType);
+            }
 
             if (typeSupport.IsArray)
                 return Activator.CreateInstance(typeSupport.Type, new object[] { length });
@@ -64,10 +57,17 @@ namespace AnySerializer
                 }
                 return Enumerable.Empty<object>();
             }
-            else if (typeSupport.HasEmptyConstructor)
+            else if (typeSupport.Type.ContainsGenericParameters)
+            {
+                // create a generic type and create an instance
+                // todo: how can we support this scenario?
+                throw new NotImplementedException();
+            }
+            else if (typeSupport.HasEmptyConstructor && !typeSupport.Type.ContainsGenericParameters)
                 return Activator.CreateInstance(typeSupport.Type);
             else if (typeSupport.IsImmutable)
                 return null;
+
             return FormatterServices.GetUninitializedObject(typeSupport.Type);
         }
 
@@ -128,7 +128,7 @@ namespace AnySerializer
                 var t = obj.GetType();
                 return t.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             }
-            return new PropertyInfo[0];
+            return null;
         }
 
         /// <summary>
@@ -150,7 +150,73 @@ namespace AnySerializer
                 }
                 return allFields;
             }
-            return new FieldInfo[0];
+            return null;
+        }
+
+        /// <summary>
+        /// Get a property from an object instance
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public static PropertyInfo GetProperty(object obj, string name)
+        {
+            if (obj != null)
+            {
+                var t = obj.GetType();
+                return t.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get a field from an object instance
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static FieldInfo GetField(object obj, string name)
+        {
+            if (obj != null)
+            {
+                var t = obj.GetType();
+                return t.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            }
+            return null;
+        }
+
+        public static void SetPropertyValue(string propertyName, object obj, object valueToSet)
+        {
+            var type = obj.GetType();
+            // var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property != null)
+            {
+                if(property.SetMethod != null)
+                    property.SetValue(obj, valueToSet);
+                else
+                {
+                    // if this is an auto-property with a backing field, set it
+                    var field = obj.GetType().GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (field != null)
+                        field.SetValue(obj, valueToSet);
+                    else
+                        throw new ArgumentException($"Property '{propertyName}' does not exist.");
+                }
+            }               
+            else
+                throw new ArgumentException($"Property '{propertyName}' does not exist.");
+        }
+
+        public static void SetFieldValue(string fieldName, object obj, object valueToSet)
+        {
+            var type = obj.GetType();
+            // var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (field != null)
+                field.SetValue(obj, valueToSet);
+            else
+                throw new ArgumentException($"Field '{fieldName}' does not exist.");
         }
 
         public static void SetPropertyValue(PropertyInfo property, object obj, object valueToSet, string path)
@@ -158,9 +224,7 @@ namespace AnySerializer
             try
             {
                 if (property.SetMethod != null)
-                {
                     property.SetValue(obj, valueToSet);
-                }
                 else
                 {
                     // if this is an auto-property with a backing field, set it
@@ -202,26 +266,37 @@ namespace AnySerializer
             if (typeSupport.IsArray)
                 return TypeId.Array;
 
-            if (_switch.ContainsKey(typeSupport.Type))
-                return _switch[typeSupport.Type];
+            if (typeSupport.IsEnum)
+                return TypeId.Enum;
+
+            if (TypeManagement.TypeMapping.ContainsKey(typeSupport.NullableBaseType))
+                return TypeManagement.TypeMapping[typeSupport.NullableBaseType];
 
             // some other special circumstances
 
-            if (typeof(IDictionary<,>).IsAssignableFrom(typeSupport.Type)
-                || typeSupport.Type.IsGenericType
+            if (typeSupport.IsTuple)
+            {
+                return TypeManagement.TypeMapping[typeof(Tuple<,>)];
+            }
+
+            if (typeof(IDictionary<,>).IsAssignableFrom(typeSupport.NullableBaseType)
+                || typeSupport.NullableBaseType.IsGenericType
                 && (
-                    typeSupport.Type.GetGenericTypeDefinition() == typeof(Dictionary<,>)
-                    || typeSupport.Type.GetGenericTypeDefinition() == typeof(IDictionary<,>)
+                    typeSupport.NullableBaseType.GetGenericTypeDefinition() == typeof(Dictionary<,>)
+                    || typeSupport.NullableBaseType.GetGenericTypeDefinition() == typeof(IDictionary<,>)
                 ))
-                return _switch[typeof(IDictionary<,>)];
+                return TypeManagement.TypeMapping[typeof(IDictionary<,>)];
 
-            if (typeof(IDictionary).IsAssignableFrom(typeSupport.Type))
-                return _switch[typeof(IDictionary)];
+            if (typeof(IDictionary).IsAssignableFrom(typeSupport.NullableBaseType))
+                return TypeManagement.TypeMapping[typeof(IDictionary)];
 
-            if (typeof(IEnumerable).IsAssignableFrom(typeSupport.Type))
-                return _switch[typeof(IEnumerable)];
+            if (typeof(IEnumerable).IsAssignableFrom(typeSupport.NullableBaseType))
+                return TypeManagement.TypeMapping[typeof(IEnumerable)];
 
-            return _switch[typeof(object)];
+            if (typeSupport.IsValueType || typeSupport.IsPrimitive)
+                throw new InvalidOperationException($"Unsupported type: {typeSupport.NullableBaseType.FullName}");
+
+            return TypeManagement.TypeMapping[typeof(object)];
         }
 
         /// <summary>
@@ -231,28 +306,12 @@ namespace AnySerializer
         /// <returns></returns>
         public static TypeSupport GetType(TypeId type)
         {
-            return new TypeSupport(_switch.Where(x => x.Value == type).Select(x => x.Key).First());
+            if (!TypeMapping.Values.Contains(type))
+                throw new InvalidOperationException($"Invalid type specified: {(int)type}");
+            var typeSupport = new TypeSupport(TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
+            return typeSupport;
         }
 
-        /// <summary>
-        /// The internal data type
-        /// </summary>
-        public enum TypeId : byte
-        {
-            Bool = 1,
-            Byte,
-            Short,
-            Int,
-            Long,
-            Float,
-            Double,
-            Decimal,
-            String,
-            Char,
-            Object,
-            Array,
-            IEnumerable,
-            IDictionary
-        }
+        
     }
 }

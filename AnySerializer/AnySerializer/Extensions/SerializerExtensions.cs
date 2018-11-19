@@ -23,6 +23,18 @@ namespace AnySerializer.Extensions
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
         /// <returns></returns>
+        public static bool Validate(this byte[] bytes)
+        {
+            var provider = new SerializerProvider();
+            return provider.Validate(bytes);
+        }
+
+        /// <summary>
+        /// Deserialize an object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         public static T Deserialize<T>(this byte[] bytes)
         {
             var provider = new SerializerProvider();

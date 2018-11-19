@@ -8,7 +8,6 @@ namespace AnySerializer
 {
     public class SerializerProvider
     {
-        private readonly Type _type;
         private readonly ICollection<Type> _ignoreAttributes = new List<Type> {
             typeof(IgnoreDataMemberAttribute),
             typeof(NonSerializedAttribute),
@@ -16,11 +15,13 @@ namespace AnySerializer
         };
         private SerializerInternal _serializer;
         private DeserializerInternal _deserializer;
+        private ValidatorInternal _validator;
 
         public SerializerProvider()
         {
             _serializer = new SerializerInternal();
             _deserializer = new DeserializerInternal();
+            _validator = new ValidatorInternal();
         }
 
         /// <summary>
@@ -63,6 +64,16 @@ namespace AnySerializer
             stream.Read(bytes, 0, bytes.Length);
 
             return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+        }
+
+        /// <summary>
+        /// Validate a serialized object
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public bool Validate(byte[] bytes)
+        {
+            return _validator.Validate(bytes);
         }
 
         

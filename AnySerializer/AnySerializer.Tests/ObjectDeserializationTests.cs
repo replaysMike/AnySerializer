@@ -1,6 +1,5 @@
 ﻿using AnySerializer.Tests.TestObjects;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 
 namespace AnySerializer.Tests
@@ -133,6 +132,38 @@ namespace AnySerializer.Tests
         private void DelegateTarget(int value)
         {
 
+        }
+
+        [Test]
+        public void ShouldDeserialize_ConcreteInterface()
+        {
+            // test that an interface with a concrete implementation doesn't ignore attributes
+            // on the concrete implementation
+            var test = new ConcreteInterfaceObject { Id = 1, TestInterface = new TestConcreteInterface { Name = "Test", SecondaryIgnoredProperty = "ShouldBeIgnored" } };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<ConcreteInterfaceObject>(bytes);
+
+            Assert.AreNotEqual(test, testDeserialized);
+            Assert.AreEqual(test.Id, testDeserialized.Id);
+            Assert.AreEqual(test.TestInterface.Name, testDeserialized.TestInterface.Name);
+            Assert.AreNotEqual(test.TestInterface.SecondaryIgnoredProperty, testDeserialized.TestInterface.SecondaryIgnoredProperty);
+        }
+
+        [Test]
+        public void ShouldDeserialize_ConcreteGenericInterface()
+        {
+            // test that an interface with a concrete implementation doesn't ignore attributes
+            // on the concrete implementation
+            var test = new ConcreteGenericInterfaceObject { Id = 1, TestInterface = new TestGenericConcreteInterface { Name = "Test", SecondaryIgnoredProperty = "ShouldBeIgnored", TestObject = true } };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<ConcreteGenericInterfaceObject>(bytes);
+
+            Assert.AreNotEqual(test, testDeserialized);
+            Assert.AreEqual(test.Id, testDeserialized.Id);
+            Assert.AreEqual(test.TestInterface.Name, testDeserialized.TestInterface.Name);
+            Assert.AreNotEqual(test.TestInterface.SecondaryIgnoredProperty, testDeserialized.TestInterface.SecondaryIgnoredProperty);
         }
     }
 }

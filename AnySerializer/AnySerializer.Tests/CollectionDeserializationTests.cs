@@ -29,6 +29,17 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldDeserialize_ListOfIntsWithNullValue()
+        {
+            var test = new List<int?> { 1, 2, null, 4 };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<List<int?>>(bytes);
+
+            CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
         public void ShouldDeserialize_DictionaryOfInts()
         {
             var test = new Dictionary<int, int> {
@@ -40,6 +51,22 @@ namespace AnySerializer.Tests
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);
             var deserializedTest = provider.Deserialize<Dictionary<int, int>>(bytes);
+
+            CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_DictionaryOfIntsWithNullValue()
+        {
+            var test = new Dictionary<int, int?> {
+                { 1, 100 },
+                { 2, null },
+                { 3, 300 },
+                { 4, 400 },
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<Dictionary<int, int?>>(bytes);
 
             CollectionAssert.AreEqual(test, deserializedTest);
         }
