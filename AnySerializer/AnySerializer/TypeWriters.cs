@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -33,15 +34,6 @@ namespace AnySerializer
 
         internal static void WriteObject(BinaryWriter writer, object obj, TypeSupport typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes)
         {
-            // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
-            // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
-            var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
-            if (objectTree.ContainsKey(hashCode))
-                return;
-
-            // ensure we can refer back to the reference for this object
-            objectTree.Add(hashCode, obj);
-
             var objectTypeId = TypeUtil.GetTypeId(typeSupport);
             // write the object type being serialized in position 0x00
             writer.Write((byte)objectTypeId);
@@ -52,29 +44,38 @@ namespace AnySerializer
             // make room for the length prefix
             writer.Seek(Constants.LengthHeaderSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
 
-            switch (objectTypeId)
+            // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
+            // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
+            var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+            if (hashCode != 0 && !objectTree.ContainsKey(hashCode))
             {
-                case TypeId.Object:
-                    TypeWriters.WriteObjectType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
-                    break;
-                case TypeId.Array:
-                    TypeWriters.WriteArrayType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
-                    break;
-                case TypeId.IDictionary:
-                    TypeWriters.WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
-                    break;
-                case TypeId.IEnumerable:
-                    TypeWriters.WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
-                    break;
-                case TypeId.Tuple:
-                    TypeWriters.WriteTupleType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
-                    break;
-                case TypeId.Enum:
-                    TypeWriters.WriteValueType(writer, lengthStartPosition, obj, new TypeSupport(typeof(Enum)), customSerializers);
-                    break;
-                default:
-                    TypeWriters.WriteValueType(writer, lengthStartPosition, obj, typeSupport, customSerializers);
-                    break;
+                // ensure we can refer back to the reference for this object
+                objectTree.Add(hashCode, obj);
+
+                switch (objectTypeId)
+                {
+                    case TypeId.Object:
+                        TypeWriters.WriteObjectType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
+                        break;
+                    case TypeId.Array:
+                        TypeWriters.WriteArrayType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
+                        break;
+                    case TypeId.IDictionary:
+                        TypeWriters.WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
+                        break;
+                    case TypeId.IEnumerable:
+                        TypeWriters.WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
+                        break;
+                    case TypeId.Tuple:
+                        TypeWriters.WriteTupleType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes);
+                        break;
+                    case TypeId.Enum:
+                        TypeWriters.WriteValueType(writer, lengthStartPosition, obj, new TypeSupport(typeof(Enum)), customSerializers);
+                        break;
+                    default:
+                        TypeWriters.WriteValueType(writer, lengthStartPosition, obj, typeSupport, customSerializers);
+                        break;
+                }
             }
 
             var currentPosition = writer.BaseStream.Position;

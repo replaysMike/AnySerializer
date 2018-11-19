@@ -23,14 +23,16 @@ namespace AnySerializer
                 return initializer();
 
             var typeSupport = new TypeSupport(type);
+            var typeHasMutated = false;
             // if we are asked to create an instance of an interface, try to initialize using a valid concrete type
-            if (typeSupport.IsInterface)
+            if (typeSupport.IsInterface && !typeSupport.IsEnumerable)
             {
                 var concreteType = typeSupport.ConcreteTypes.FirstOrDefault();
                 if (concreteType == null)
                     throw new InvalidOperationException($"Unable to locate a concrete type for '{typeSupport.Type.FullName}'! Cannot create instance.");
 
                 typeSupport = new TypeSupport(concreteType);
+                typeHasMutated = true;
             }
 
             if (typeSupport.IsArray)
@@ -60,8 +62,17 @@ namespace AnySerializer
             else if (typeSupport.Type.ContainsGenericParameters)
             {
                 // create a generic type and create an instance
-                // todo: how can we support this scenario?
-                throw new NotImplementedException();
+                // to accomplish this, we need to create a new generic type using the type arguments from the interface
+                // and the concrete class definition. voodoo!
+                var originalTypeSupport = new TypeSupport(type);
+                var genericArguments = originalTypeSupport.Type.GetGenericArguments();
+                var newType = typeSupport.Type.MakeGenericType(genericArguments);
+                object newObject = null;
+                if (typeSupport.HasEmptyConstructor)
+                    newObject = Activator.CreateInstance(newType);
+                else
+                    newObject = FormatterServices.GetUninitializedObject(newType);
+                return newObject;
             }
             else if (typeSupport.HasEmptyConstructor && !typeSupport.Type.ContainsGenericParameters)
                 return Activator.CreateInstance(typeSupport.Type);
@@ -312,6 +323,28 @@ namespace AnySerializer
             return typeSupport;
         }
 
-        
+        /// <summary>
+        /// True if the type is a value type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsValueType(TypeId type)
+        {
+            return type == TypeId.Bool
+                || type == TypeId.Byte
+                || type == TypeId.Char
+                || type == TypeId.DateTime
+                || type == TypeId.Decimal
+                || type == TypeId.Double
+                || type == TypeId.Enum
+                || type == TypeId.Float
+                || type == TypeId.Guid
+                || type == TypeId.Int
+                || type == TypeId.Long
+                || type == TypeId.Point
+                || type == TypeId.Short
+                || type == TypeId.String
+                || type == TypeId.TimeSpan;
+        }
     }
 }

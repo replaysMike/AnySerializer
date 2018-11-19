@@ -1,5 +1,6 @@
 ﻿using AnySerializer.Tests.TestObjects;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace AnySerializer.Tests
@@ -14,11 +15,22 @@ namespace AnySerializer.Tests
             {
                 Id = 1,
                 IsEnabled = true,
-                Name = "Test",
+                Description = "Test",
             };
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);
             var testDeserialized = provider.Deserialize<BasicObject>(bytes);
+
+            Assert.AreEqual(test, testDeserialized);
+        }
+
+        [Test]
+        public void ShouldDeserialize_Complex2ObjectNullString()
+        {
+            var test = new Complex2Object(BasicEnum.ValueOne, Guid.NewGuid(), null, null);
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<Complex2Object>(bytes);
 
             Assert.AreEqual(test, testDeserialized);
         }

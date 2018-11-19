@@ -186,7 +186,7 @@ namespace AnySerializer
         public override bool Equals(object obj)
         {
             var objTyped = (TypeSupport)obj;
-            return objTyped.Equals(Type);
+            return objTyped.Type.Equals(Type);
         }
 
         public override string ToString()

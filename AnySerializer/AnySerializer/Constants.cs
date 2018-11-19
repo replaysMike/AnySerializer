@@ -13,6 +13,6 @@
         /// <summary>
         /// The maximum recursion depth to use, by default.
         /// </summary>
-        public const int DefaultMaxDepth = 1000;
+        public const int DefaultMaxDepth = 32;
     }
 }

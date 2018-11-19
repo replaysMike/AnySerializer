@@ -23,6 +23,16 @@ namespace AnySerializer
                 {
                     using (var reader = new BinaryReader(stream))
                     {
+                        /**
+                         * Chunk Format 
+                         * [ChunkType]      1 byte (byte)
+                         * [ChunkLength]    4 bytes (Int32)
+                         * [Data]           [ChunkLength-Int32] bytes
+                         * 
+                         * Chunks may contain value types or Chunks, it's a recursive structure.
+                         * By reading if you've read all of the data bytes, you know you've read 
+                         * the whole structure.
+                         */
                         isValid = ReadChunk(reader);
                     }
                 }
@@ -35,6 +45,11 @@ namespace AnySerializer
             return isValid;
         }
 
+        /// <summary>
+        /// Read a single chunk of data, recursively.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         private bool ReadChunk(BinaryReader reader)
         {
             var isChunkValid = true;
@@ -48,6 +63,7 @@ namespace AnySerializer
             {
                 switch (objectTypeId)
                 {
+                    // these types may contain additional chunks, only value types may not.
                     case TypeId.Object:
                     case TypeId.Array:
                     case TypeId.IDictionary:
@@ -61,7 +77,7 @@ namespace AnySerializer
 
                 if(reader.BaseStream.Position - startPosition == 0)
                 {
-                    // it's a value type
+                    // it's a value type, read the full data
                     var data = reader.ReadBytes(length - Constants.LengthHeaderSize);
                 }
                 else

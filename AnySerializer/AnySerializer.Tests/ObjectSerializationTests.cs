@@ -14,7 +14,7 @@ namespace AnySerializer.Tests
             {
                 Id = 1,
                 IsEnabled = true,
-                Name = "Test",
+                Description = "Test",
             };
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);

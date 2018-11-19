@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -62,8 +63,11 @@ namespace AnySerializer
                 return null;
 
             // does this object map to something expected?
-            if (TypeUtil.GetTypeId(objectTypeSupport) != objectTypeId)
-                throw new InvalidOperationException($"Serialized data wants to map {typeSupport.Type.Name} to {objectTypeId}, invalid data.");
+            if (!TypeUtil.GetTypeId(objectTypeSupport).Equals(objectTypeId))
+                throw new InvalidOperationException($"Serialized data wants to map {objectTypeId} to {typeSupport.Type.Name}, invalid data.");
+
+            //if (TypeUtil.IsValueType(objectTypeId) && !objectTypeSupport.Equals(typeSupport))
+            //    throw new InvalidOperationException($"Serialized data wants to map {objectTypeSupport.Type.Name} to {typeSupport.Type.Name}, invalid data.");
 
             var newObj = TypeUtil.CreateEmptyObject(typeSupport.Type);
 
@@ -75,7 +79,8 @@ namespace AnySerializer
                 if (objectTree.ContainsKey(hashCode))
                     return objectTree[hashCode];
                 // ensure we can refer back to the reference for this object
-                objectTree.Add(hashCode, newObj);
+                if(hashCode > 0)
+                    objectTree.Add(hashCode, newObj);
             }
 
             switch (objectTypeId)
