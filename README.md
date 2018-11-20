@@ -35,45 +35,59 @@ If you find you need to map interfaces to concrete types that are contained in d
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
+var bytes = Serializer.Serialize();
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddMapping<ICustomInterfaceName, ConcreteClassName>();
   config.AddMapping<ICustomer, Customer>();
 });
 
-var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMaps);
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes, typeMaps);
 ```
 
 or alternatively, a type factory for creating empty objects:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
+var bytes = Serializer.Serialize();
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddFactory<ICustomInterfaceName, ConcreteClassName>(() => new ConcreteClassName());
 });
 
-var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMaps);
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes, typeMaps);
 ```
 
-and an alternate form for adding single type mappings:
+and an alternate form for adding one-or-more mappings:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
+
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .Create<ConcreteClassName>();
+
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMap);
 ```
 
-or single type factories:
+or single type one-or-more factories:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
+var bytes = Serializer.Serialize();
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .CreateUsing<ConcreteClassName>(() => new ConcreteClassName());
-var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMap);
+
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes, typeMap);
+```
+
+### Validating binary data
+
+A validator is provided for verifying if a serialized object contains valid deserializable data:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
 ```
 
 ### Extensions
