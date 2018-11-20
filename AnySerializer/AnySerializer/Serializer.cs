@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 
 namespace AnySerializer
 {
@@ -26,10 +23,23 @@ namespace AnySerializer
         /// </summary>
         /// <typeparam name="T">The type to deserialize</typeparam>
         /// <param name="bytes"></param>
+        /// <param name="typeMaps">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(byte[] bytes)
+        public static T Deserialize<T>(byte[] bytes, params TypeMap[] typeMaps)
         {
-            return Extensions.SerializerExtensions.Deserialize<T>(bytes);
+            return Extensions.SerializerExtensions.Deserialize<T>(bytes, typeMaps);
+        }
+
+        /// <summary>
+        /// Deserialize an object of type <typeparamref name="T"/>
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize</typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="typeRegistry">A list of type mappings</param>
+        /// <returns>Deserlized <typeparamref name="T"/></returns>
+        public static T Deserialize<T>(byte[] bytes, TypeRegistry typeRegistry)
+        {
+            return Extensions.SerializerExtensions.Deserialize<T>(bytes, typeRegistry);
         }
 
         /// <summary>

@@ -25,8 +25,8 @@ namespace AnySerializer.Tests.TestObjects
             return Id == other.Id
                 && (Department == null && other.Department == null) || Department.Equals(other.Department)
                 && IsEnabled == other.IsEnabled
-                && NumbersList.SequenceEqual(other.NumbersList)
-                && dictionaryComparer.Equals(Customers, other.Customers)
+                && ((NumbersList == null && other.NumbersList == null) || NumbersList.SequenceEqual(other.NumbersList))
+                && ((Customers == null && other.Customers == null) || dictionaryComparer.Equals(Customers, other.Customers))
                 ;
         }
     }

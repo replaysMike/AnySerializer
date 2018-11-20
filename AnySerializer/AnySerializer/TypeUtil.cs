@@ -14,13 +14,21 @@ namespace AnySerializer
         /// Create a new, empty object of a given type
         /// </summary>
         /// <param name="type">The type of object to construct</param>
+        /// <param name="typeRegistry">A type registry for constructing unknown types</param>
         /// <param name="initializer">An optional initializer to use to create the object</param>
         /// <param name="length">For array types, the length of the array to create</param>
         /// <returns></returns>
-        public static object CreateEmptyObject(Type type, Func<object> initializer = null, int length = 0)
+        public static object CreateEmptyObject(Type type, TypeRegistry typeRegistry, Func<object> initializer = null, int length = 0)
         {
             if (initializer != null)
                 return initializer();
+
+            // check the type registry for a custom type mapping
+            if (typeRegistry?.ContainsType(type) == true)
+                type = typeRegistry.GetMapping(type);
+            // check the type registry for a custom type factory
+            if (typeRegistry?.ContainsFactoryType(type) == true)
+                return typeRegistry.GetFactory(type).Invoke();
 
             var typeSupport = new TypeSupport(type);
             var typeHasMutated = false;
@@ -317,10 +325,30 @@ namespace AnySerializer
         /// <returns></returns>
         public static TypeSupport GetType(TypeId type)
         {
-            if (!TypeMapping.Values.Contains(type))
+            if (!TypeManagement.TypeMapping.Values.Contains(type))
                 throw new InvalidOperationException($"Invalid type specified: {(int)type}");
-            var typeSupport = new TypeSupport(TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
+            var typeSupport = new TypeSupport(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
             return typeSupport;
+        }
+
+        /// <summary>
+        /// Get the type id without special flag bits
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static TypeId GetTypeId(byte typeId)
+        {
+            return GetTypeId((TypeId)typeId);
+        }
+
+        /// <summary>
+        /// Get the type id without special flag bits
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static TypeId GetTypeId(TypeId typeId)
+        {
+            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap);
         }
 
         /// <summary>
@@ -345,6 +373,26 @@ namespace AnySerializer
                 || type == TypeId.Short
                 || type == TypeId.String
                 || type == TypeId.TimeSpan;
+        }
+
+        /// <summary>
+        /// True if the value of the type contains a null value
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsNullValue(TypeId type)
+        {
+            return ((int)type & (int)TypeId.NullValue) == (int)TypeId.NullValue;
+        }
+
+        /// <summary>
+        /// True if the value indicates a type descriptor map is stored
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsTypeDescriptorMap(TypeId type)
+        {
+            return ((int)type & (int)TypeId.TypeDescriptorMap) == (int)TypeId.TypeDescriptorMap;
         }
     }
 }
