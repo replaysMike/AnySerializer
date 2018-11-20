@@ -29,6 +29,53 @@ var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>();
 
 Ignoring fields/properties is as easy as using any of the following standard ignores: `[IgnoreDataMember]`, `[NonSerializable]` and `[JsonIgnore]`. Note that `[NonSerializable]` only works on fields, for properties (and/or fields) use `[IgnoreDataMember]`.
 
+### Providing custom type mappings
+
+If you find you need to map interfaces to concrete types that are contained in different assemblies, you can add add custom type mappings:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
+
+var typeMaps = TypeRegistry.Configure((config) => {
+  config.AddMapping<ICustomInterfaceName, ConcreteClassName>();
+  config.AddMapping<ICustomer, Customer>();
+});
+
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMaps);
+```
+
+or alternatively, a type factory for creating empty objects:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
+
+var typeMaps = TypeRegistry.Configure((config) => {
+  config.AddFactory<ICustomInterfaceName, ConcreteClassName>(() => new ConcreteClassName());
+});
+
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMaps);
+```
+
+and an alternate form for adding single type mappings:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
+
+var typeMap = TypeRegistry.For<ICustomInterfaceName>()
+                .Create<ConcreteClassName>();
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMap);
+```
+
+or single type factories:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
+
+var typeMap = TypeRegistry.For<ICustomInterfaceName>()
+                .CreateUsing<ConcreteClassName>(() => new ConcreteClassName());
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMap);
+```
+
 ### Extensions
 
 You can use the extensions to perform serialization/deserialization:
