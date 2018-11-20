@@ -62,12 +62,12 @@ and an alternate form for adding one-or-more mappings:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-
+var bytes = Serializer.Serialize();
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .Create<ConcreteClassName>();
 
-var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(typeMap);
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes, typeMap);
 ```
 
 or single type one-or-more factories:
@@ -84,10 +84,13 @@ var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(by
 
 ### Validating binary data
 
-A validator is provided for verifying if a serialized object contains valid deserializable data:
+A validator is provided for verifying if a serialized object contains valid deserializable data that has not been corrupted:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
+var bytes = Serializer.Serialize();
+var isSuccess = Serializer.Validate(bytes);
+Assert.IsTrue(isSuccess);
 ```
 
 ### Extensions
