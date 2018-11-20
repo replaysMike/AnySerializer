@@ -96,5 +96,28 @@ namespace AnySerializer.Tests
             var test = TypeUtil.CreateEmptyObject<BasicObject>();
             Assert.AreEqual(test.GetType(), typeof(BasicObject));
         }
+
+        [Test]
+        public void Should_TypeId_ContainNullValue()
+        {
+            var typeId = TypeId.Double | TypeId.NullValue;
+            Assert.AreEqual(true, TypeUtil.IsNullValue(typeId));
+        }
+
+        [Test]
+        public void Should_TypeId_NotContainNullValue()
+        {
+            var typeId = TypeId.Double;
+            Assert.AreEqual(false, TypeUtil.IsNullValue(typeId));
+        }
+
+        [Test]
+        public void Should_TypeId_ShouldRemoveNullValue()
+        {
+            var typeId = TypeUtil.GetTypeId(TypeId.Double | TypeId.NullValue);
+            Assert.AreEqual(false, TypeUtil.IsNullValue(typeId));
+            Assert.AreEqual(TypeId.Double, typeId);
+        }
+
     }
 }

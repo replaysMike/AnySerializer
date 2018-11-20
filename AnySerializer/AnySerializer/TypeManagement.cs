@@ -39,26 +39,33 @@ namespace AnySerializer
         /// </summary>
         public enum TypeId : byte
         {
-            Bool = 1,
-            Byte,
-            Short,
-            Int,
-            Long,
-            Float,
-            Double,
-            Decimal,
-            String,
-            Char,
-            Enum,
-            Object,
-            Array,
-            IEnumerable,
-            IDictionary,
-            Guid,
-            DateTime,
-            TimeSpan,
-            Point,
-            Tuple
+            // non-flaggable
+            None        = 0,
+            Bool        = 1,
+            Byte        = 2,
+            Short       = 3,
+            Int         = 4,
+            Long        = 5,
+            Float       = 6,
+            Double      = 7,
+            Decimal     = 8,
+            String      = 9,
+            Char        = 10,
+            Enum        = 11,
+            Object      = 12,
+            Array       = 13,
+            IEnumerable = 14,
+            IDictionary = 15,
+            Guid        = 16,
+            DateTime    = 17,
+            TimeSpan    = 18,
+            Point       = 19,
+            Tuple       = 20,
+
+            // special bit to indicate type is a typedescriptor map
+            TypeDescriptorMap = 64,
+            // special bit to indicate type value is null
+            NullValue   = 128,
         }
     }
 }

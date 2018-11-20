@@ -45,6 +45,32 @@ namespace AnySerializer.Extensions
         /// Deserialize an object
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="typeMaps">A list of type mappings</param>
+        /// <returns></returns>
+        public static T Deserialize<T>(this byte[] bytes, params TypeMap[] typeMaps)
+        {
+            var provider = new SerializerProvider();
+            return provider.Deserialize<T>(bytes, typeMaps);
+        }
+
+        /// <summary>
+        /// Deserialize an object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="typeRegistry">A list of type mappings</param>
+        /// <returns></returns>
+        public static T Deserialize<T>(this byte[] bytes, TypeRegistry typeRegistry)
+        {
+            var provider = new SerializerProvider();
+            return provider.Deserialize<T>(bytes, typeRegistry);
+        }
+
+        /// <summary>
+        /// Deserialize an object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="stream"></param>
         /// <returns></returns>
         public static T Deserialize<T>(this Stream stream)

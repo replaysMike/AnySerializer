@@ -27,13 +27,15 @@ namespace AnySerializer
         /// <summary>
         /// Serialize an object to a byte array
         /// </summary>
+        /// <param name="obj">The object to serialize</param>
+        /// <param name="embedTypes">True to embed types in serialization data (increases size)</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj)
+        public byte[] Serialize<T>(T obj, bool embedTypes = false)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
 
-            return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, _ignoreAttributes, embedTypes);
         }
 
         /// <summary>
@@ -50,6 +52,46 @@ namespace AnySerializer
                 return default(T);
 
             return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="typeMaps">A list of type mappings</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, params TypeMap[] typeMaps)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+            if (bytes.Length == 0)
+                return default(T);
+
+            TypeRegistry typeRegistry = null;
+            if(typeMaps != null && typeMaps.Length > 0)
+            {
+                typeRegistry = new TypeRegistry(typeMaps);
+            }
+
+            return Deserialize<T>(bytes, typeRegistry);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="typeRegistry">A list of type mappings</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, TypeRegistry typeRegistry)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+            if (bytes.Length == 0)
+                return default(T);
+
+            return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
         }
 
         public T Deserialize<T>(Stream stream)

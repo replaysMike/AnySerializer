@@ -177,5 +177,62 @@ namespace AnySerializer.Tests
             Assert.AreEqual(test.TestInterface.Name, testDeserialized.TestInterface.Name);
             Assert.AreNotEqual(test.TestInterface.SecondaryIgnoredProperty, testDeserialized.TestInterface.SecondaryIgnoredProperty);
         }
+
+        [Test]
+        public void ShouldDeserialize_ComplexObjectWithEmptyCollection()
+        {
+            var test = new ComplexObject()
+            {
+                Id = 1,
+                Customers = new Dictionary<int, CustomerObject>
+                {
+                    { 1, new CustomerObject
+                        {
+                            Id = 1,
+                            Name = "John Doe",
+                            CustomerPaymentRecords = new List<CustomerPaymentRecord> { { new CustomerPaymentRecord { RecordId = 1, PaymentAmount = 10.00M } } },
+                        }
+                    }
+                },
+                Department = "Sales",
+                IsEnabled = true,
+                NumbersList = new List<int>()
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<ComplexObject>(bytes);
+
+            Assert.AreEqual(test, testDeserialized);
+            Assert.NotNull(testDeserialized.NumbersList);
+            Assert.AreEqual(0, testDeserialized.NumbersList.Count);
+        }
+
+        [Test]
+        public void ShouldDeserialize_ComplexObjectWithNullCollection()
+        {
+            var test = new ComplexObject()
+            {
+                Id = 1,
+                Customers = new Dictionary<int, CustomerObject>
+                {
+                    { 1, new CustomerObject
+                        {
+                            Id = 1,
+                            Name = "John Doe",
+                            CustomerPaymentRecords = new List<CustomerPaymentRecord> { { new CustomerPaymentRecord { RecordId = 1, PaymentAmount = 10.00M } } },
+                        }
+                    }
+                },
+                Department = "Sales",
+                IsEnabled = true,
+                NumbersList = null
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test, true);
+            var testDeserialized = provider.Deserialize<ComplexObject>(bytes);
+
+            Assert.AreEqual(test, testDeserialized);
+            Assert.IsNull(testDeserialized.NumbersList);
+        }
     }
 }
