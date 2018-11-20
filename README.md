@@ -21,7 +21,7 @@ using AnySerializer;
 
 var originalObject = new SomeComplexTypeWithDeepStructure();
 var bytes = Serializer.Serialize();
-var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>();
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
 
 ```
 
