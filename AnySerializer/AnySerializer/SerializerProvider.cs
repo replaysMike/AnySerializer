@@ -6,6 +6,9 @@ using System.Runtime.Serialization;
 
 namespace AnySerializer
 {
+    /// <summary>
+    /// Provides serialization/deserialization
+    /// </summary>
     public class SerializerProvider
     {
         private readonly ICollection<Type> _ignoreAttributes = new List<Type> {
