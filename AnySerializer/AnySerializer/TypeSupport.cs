@@ -30,7 +30,8 @@ namespace AnySerializer
         public bool IsValueTuple { get; private set; }
         public bool IsNullable { get; private set; }
         public bool IsInterface { get; private set; }
-        public ICollection<Type> ConcreteTypes { get; private set; }
+        public Type ConcreteType { get; private set; }
+        public ICollection<Type> KnownConcreteTypes { get; private set; }
         public ICollection<Type> Attributes { get; private set; }
         public Type ElementType { get; private set; }
         public ICollection<Type> GenericArgumentTypes { get; private set; }
@@ -46,11 +47,18 @@ namespace AnySerializer
             InspectType();
         }
 
+        public void SetConcreteTypeFromInstance(object concreteObject)
+        {
+            if(concreteObject != null)
+                ConcreteType = concreteObject.GetType();
+        }
+
         private void InspectType()
         {
             var emptyConstructorDefined = Type.GetConstructor(Type.EmptyTypes);
             Attributes = new List<Type>();
             GenericArgumentTypes = new List<Type>();
+            ConcreteType = Type;
             HasEmptyConstructor = Type.IsValueType || emptyConstructorDefined != null;
             IsAbstract = Type.IsAbstract;
             UnderlyingType = Type.UnderlyingSystemType;
@@ -74,7 +82,7 @@ namespace AnySerializer
             IsPrimitive = Type.IsPrimitive;
             IsInterface = Type.IsInterface;
             if (IsInterface)
-                ConcreteTypes = GetConcreteTypes(Type);
+                KnownConcreteTypes = GetConcreteTypes(Type);
             IsEnum = Type.IsEnum;
             if (IsEnum)
                 EnumType = Type.GetEnumUnderlyingType();
@@ -168,8 +176,8 @@ namespace AnySerializer
         public Type GetConcreteType(object obj)
         {
             var objectType = obj.GetType();
-            if(ConcreteTypes != null)
-                return ConcreteTypes.Where(x => objectType.IsAssignableFrom(x)).FirstOrDefault();
+            if(KnownConcreteTypes != null)
+                return KnownConcreteTypes.Where(x => objectType.IsAssignableFrom(x)).FirstOrDefault();
             return objectType;
         }
 

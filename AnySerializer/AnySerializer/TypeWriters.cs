@@ -50,12 +50,17 @@ namespace AnySerializer
                 throw new InvalidOperationException($"[{path}] {ex.Message}", ex);
             }
 
-            // write the object type being serialized in position 0x00
+            byte objectTypeIdByte = (byte)objectTypeId;
             // if the object is null, indicate so in the type mask
             if (obj == null)
-                writer.Write((byte)(objectTypeId | TypeId.NullValue));
-            else
-                writer.Write((byte)objectTypeId);
+                objectTypeIdByte |= (byte)TypeId.NullValue;
+            // if the object type is an interface, indicate so in the type mask
+            if (typeSupport.IsInterface)
+                objectTypeIdByte |= (byte)TypeId.AbstractInterface;
+            var isValueType = TypeUtil.IsValueType(objectTypeId);
+
+            // write the object type being serialized in position 0x00
+            writer.Write(objectTypeIdByte);
 
             // make a note of where this object starts, so we can populate the length header later
             var lengthStartPosition = writer.BaseStream.Position;
@@ -63,9 +68,10 @@ namespace AnySerializer
             // make room for the length prefix
             writer.Seek(Constants.LengthHeaderSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
 
-            // write the optional type descriptor id - value types don't store type descriptors
+            // write the optional type descriptor id - only interfaces can store type descriptors
             var containsTypeDescriptorId = false;
-            if (typeDescriptors != null && !TypeUtil.IsValueType(objectTypeId)) {
+            if (typeDescriptors != null && typeSupport.IsInterface)
+            {
                 var typeId = typeDescriptors.AddKnownType(typeSupport);
                 writer.Write((ushort)typeId);
                 containsTypeDescriptorId = true;
@@ -240,34 +246,26 @@ namespace AnySerializer
             {
                 path = $"{rootPath}.{property.Name}";
                 var propertyTypeSupport = new TypeSupport(property.PropertyType);
-                var concretePropertyTypeSupport = TypeUtil.GetProperty(obj, property.Name);
-                var propertyType = new TypeSupport(concretePropertyTypeSupport.PropertyType);
-
                 var propertyValue = property.GetValue(obj);
-                TypeSupport propertyConcreteTypeSupport = null;
-                if (propertyValue != null)
-                    propertyConcreteTypeSupport = propertyValue.GetType().TypeSupport();
+                propertyTypeSupport.SetConcreteTypeFromInstance(propertyValue);
                 if (property.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
                 if (propertyTypeSupport.IsDelegate)
                     continue;
-                WriteObject(writer, propertyValue, propertyConcreteTypeSupport ?? propertyTypeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, propertyValue, propertyTypeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
 
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.Name}";
                 var fieldTypeSupport = new TypeSupport(field.FieldType);
-                var concreteFieldTypeSupport = TypeUtil.GetField(obj, field.Name);
+                var fieldValue = field.GetValue(obj);
+                fieldTypeSupport.SetConcreteTypeFromInstance(fieldValue);
                 if (field.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
                 if (fieldTypeSupport.IsDelegate)
                     continue;
-                var fieldValue = field.GetValue(obj);
-                TypeSupport fieldConcreteTypeSupport = null;
-                if (fieldValue != null)
-                    fieldConcreteTypeSupport = fieldValue.GetType().TypeSupport();
-                WriteObject(writer, fieldValue, fieldConcreteTypeSupport ?? fieldTypeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, fieldValue, fieldTypeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
         }
     }

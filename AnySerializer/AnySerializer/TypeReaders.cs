@@ -76,7 +76,9 @@ namespace AnySerializer
             headerLength += sizeof(byte);
             var objectTypeId = TypeUtil.GetTypeId(objectTypeByte);
             var isNullValue = TypeUtil.IsNullValue((TypeId)objectTypeByte);
+            var isAbstractInterface = TypeUtil.IsAbstractInterface((TypeId)objectTypeByte);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap((TypeId)objectTypeByte);
+            var isValueType = TypeUtil.IsValueType(objectTypeId);
 
             // read the length prefix (minus the length field itself)
             dataLength = reader.ReadInt32();
@@ -98,8 +100,8 @@ namespace AnySerializer
                 return ReadObject(reader, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, null, ref dataLength, ref headerLength);
             }
 
-            // value types don't contain type descriptors
-            if(typeDescriptors?.Types.Any() == true && !TypeUtil.IsValueType(objectTypeId))
+            // only interfaces can store type descriptors
+            if(typeDescriptors?.Types.Any() == true && isAbstractInterface)
             {
                 // type descriptors are embedded, read in the type
                 var typeId = reader.ReadUInt16();
@@ -111,7 +113,7 @@ namespace AnySerializer
             try
             {
                 if (dataLength == 0)
-                    return TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry);
+                    return TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry, typeDescriptor);
             }
             catch (InvalidOperationException ex)
             {
@@ -128,7 +130,7 @@ namespace AnySerializer
             object newObj = null;
             try
             {
-                newObj = TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry);
+                newObj = TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry, typeDescriptor);
             }
             catch (InvalidOperationException ex)
             {
@@ -222,7 +224,7 @@ namespace AnySerializer
             }
 
             // return the value
-            newObj = TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry, length: newList.Count);
+            newObj = TypeUtil.CreateEmptyObject(typeSupport.Type, typeRegistry, typeDescriptor, length: newList.Count);
             newList.CopyTo((Array)newObj, 0);
             return (Array)newObj;
         }
@@ -266,7 +268,7 @@ namespace AnySerializer
                 tupleType = TupleExtensions.CreateValueTuple(typeSupports.Select(x => x.Type).ToList());
             else
                 tupleType = TupleExtensions.CreateTuple(typeSupports.Select(x => x.Type).ToList());
-            var newTuple = TypeUtil.CreateEmptyObject(tupleType, typeRegistry);
+            var newTuple = TypeUtil.CreateEmptyObject(tupleType, typeRegistry, typeDescriptor);
             newObj = newTuple;
             var index = 0;
             while (i < length)

@@ -62,6 +62,8 @@ namespace AnySerializer
             Point       = 19,
             Tuple       = 20,
 
+            // special bit to indicate the type is abstract
+            AbstractInterface = 32,
             // special bit to indicate type is a typedescriptor map
             TypeDescriptorMap = 64,
             // special bit to indicate type value is null

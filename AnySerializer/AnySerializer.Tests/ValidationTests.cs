@@ -25,6 +25,22 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldValidate_BasicObjectWithEmbeddedTypeDescriptors()
+        {
+            var test = new BasicObject()
+            {
+                Id = 1,
+                IsEnabled = true,
+                Description = "Test",
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test, embedTypes: true);
+            var isValid = provider.Validate(bytes);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [Test]
         public void ShouldValidate_ComplexObject()
         {
             var test = new ComplexObject()
