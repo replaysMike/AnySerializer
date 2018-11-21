@@ -33,14 +33,13 @@ namespace AnySerializer
             TypeDescriptors typeDescriptors = null;
             if(useTypeDescriptors) typeDescriptors = new TypeDescriptors();
 
-            WriteObject(writer, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, string.Empty, ignoreAttributes, typeDescriptors);
+            var length = WriteObject(writer, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, string.Empty, ignoreAttributes, typeDescriptors);
 
             return typeDescriptors;
         }
 
-        internal static void WriteObject(BinaryWriter writer, object obj, TypeSupport typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static long WriteObject(BinaryWriter writer, object obj, TypeSupport typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
-
             TypeId objectTypeId = TypeId.None;
             try
             {
@@ -65,9 +64,11 @@ namespace AnySerializer
             writer.Seek(Constants.LengthHeaderSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
 
             // write the optional type descriptor id - value types don't store type descriptors
+            var containsTypeDescriptorId = false;
             if (typeDescriptors != null && !TypeUtil.IsValueType(objectTypeId)) {
                 var typeId = typeDescriptors.AddKnownType(typeSupport);
                 writer.Write((ushort)typeId);
+                containsTypeDescriptorId = true;
             }
 
             // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
@@ -106,11 +107,15 @@ namespace AnySerializer
 
             var currentPosition = writer.BaseStream.Position;
             // write the length header at the start of this object
-            var length = writer.BaseStream.Length - lengthStartPosition;
+            var dataLength = writer.BaseStream.Position - lengthStartPosition;
+            // if we wrote a typeDescriptorId, that doesn't apply to the dataLength
+            if (containsTypeDescriptorId)
+                dataLength -= sizeof(ushort);
             writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);
-            writer.Write((int)length);
+            writer.Write((int)dataLength);
             // reset the position to current
             writer.Seek((int)currentPosition, SeekOrigin.Begin);
+            return dataLength;
         }
 
         internal static void WriteValueType(BinaryWriter writer, long lengthStartPosition, object obj, TypeSupport typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers)
@@ -190,7 +195,7 @@ namespace AnySerializer
         internal static void WriteTupleType(BinaryWriter writer, long lengthStartPosition, object obj, TypeSupport typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element, treat a tuple as a list of objects
-            List<object> enumerable = new List<object>();
+            var enumerable = new List<object>();
             if (typeSupport.IsValueTuple)
                 enumerable = obj.GetValueTupleItemObjects();
             else if (typeSupport.IsTuple)
