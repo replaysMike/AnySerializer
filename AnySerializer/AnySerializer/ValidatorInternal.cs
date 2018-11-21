@@ -78,8 +78,9 @@ namespace AnySerializer
 
             if (isTypeDescriptorMap)
             {
+                var dataLength = length - sizeof(int);
                 // read in the type descriptor map
-                typeDescriptors = TypeReaders.GetTypeDescriptorMap(reader, length);
+                typeDescriptors = TypeReaders.GetTypeDescriptorMap(reader, dataLength);
                 // continue reading the data
                 return ReadChunk(reader, typeDescriptors);
             }
@@ -92,11 +93,11 @@ namespace AnySerializer
                 switch (objectTypeId)
                 {
                     // these types may contain additional chunks, only value types may not.
-                    case TypeId.Object:
                     case TypeId.Array:
+                    case TypeId.Tuple:
                     case TypeId.IDictionary:
                     case TypeId.IEnumerable:
-                    case TypeId.Tuple:
+                    case TypeId.Object:
                         isChunkValid = ReadChunk(reader, typeDescriptors);
                         break;
                 }
@@ -108,7 +109,7 @@ namespace AnySerializer
                     // it's a value type, read the full data
                     var data = reader.ReadBytes(length - Constants.LengthHeaderSize);
                 }
-                else
+                else if(reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     // read another chunk
                     isChunkValid = ReadChunk(reader, typeDescriptors);
