@@ -55,27 +55,36 @@ namespace AnySerializer
         private bool ReadChunk(BinaryReader reader, TypeDescriptors typeDescriptors)
         {
             var isChunkValid = true;
-            var objectTypeId = (TypeId)reader.ReadByte();
-            var objectTypeSupport = TypeUtil.GetType(objectTypeId);
+            var objectTypeIdByte = reader.ReadByte();
+            var objectTypeId = (TypeId)objectTypeIdByte;
+            var isNullValue = TypeUtil.IsNullValue(objectTypeId);
+            var isAbstractInterface = TypeUtil.IsAbstractInterface(objectTypeId);
+            var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap(objectTypeId);
+
+            // strip the flags and get only the type
+            var objectTypeIdOnly = TypeUtil.GetTypeId(objectTypeIdByte);
+            var isValueType = TypeUtil.IsValueType(objectTypeIdOnly);
             var length = reader.ReadInt32();
             var lengthStartPosition = reader.BaseStream.Position;
             ushort typeDescriptorId = 0;
 
-            // read in the type descriptor id, if it's not a value type
-            if(typeDescriptors != null && !TypeUtil.IsValueType(objectTypeId))
+            // only interfaces can store type descriptors
+            if (typeDescriptors != null && isAbstractInterface)
             {
                 typeDescriptorId = reader.ReadUInt16();
                 if (!typeDescriptors.Contains(typeDescriptorId))
                     return false;
             }
 
-            if (TypeUtil.IsTypeDescriptorMap(objectTypeId))
+            if (isTypeDescriptorMap)
             {
                 // read in the type descriptor map
                 typeDescriptors = TypeReaders.GetTypeDescriptorMap(reader, length);
                 // continue reading the data
                 return ReadChunk(reader, typeDescriptors);
             }
+
+            var objectTypeSupport = TypeUtil.GetType(objectTypeIdOnly);
 
             // value type
             if (length > 0)

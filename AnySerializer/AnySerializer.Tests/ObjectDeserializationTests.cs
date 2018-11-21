@@ -234,5 +234,34 @@ namespace AnySerializer.Tests
             Assert.AreEqual(test, testDeserialized);
             Assert.IsNull(testDeserialized.NumbersList);
         }
+
+        [Test]
+        public void ShouldNotDeserialize_CorrectImplementation_InterfaceWithMultipleConcreteImplementation()
+        {
+            var test = new InterfaceWithMultipleConcreteObject()
+            {
+                UnknownClass = new TestInterfaceObject3() { Id = 3 }
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<InterfaceWithMultipleConcreteObject>(bytes);
+
+            Assert.AreNotEqual(typeof(TestInterfaceObject3), testDeserialized.UnknownClass.GetType());
+        }
+
+        [Test]
+        public void ShouldDeserialize_CorrectImplementation_InterfaceWithMultipleConcreteImplementation()
+        {
+            var test = new InterfaceWithMultipleConcreteObject()
+            {
+                UnknownClass = new TestInterfaceObject3() { Id = 3 }
+            };
+            var provider = new SerializerProvider();
+            // embed the full types so we can properly deserialize the correct concrete instance
+            var bytes = provider.Serialize(test, embedTypes: true);
+            var testDeserialized = provider.Deserialize<InterfaceWithMultipleConcreteObject>(bytes);
+
+            Assert.AreEqual(typeof(TestInterfaceObject3), testDeserialized.UnknownClass.GetType());
+        }
     }
 }

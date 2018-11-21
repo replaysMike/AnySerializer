@@ -15,10 +15,11 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type">The type of object to construct</param>
         /// <param name="typeRegistry">A type registry for constructing unknown types</param>
+        /// <param name="typeDescriptor">A type descriptor that indicates the embedded concrete type for an interface type</param>
         /// <param name="initializer">An optional initializer to use to create the object</param>
         /// <param name="length">For array types, the length of the array to create</param>
         /// <returns></returns>
-        public static object CreateEmptyObject(Type type, TypeRegistry typeRegistry, Func<object> initializer = null, int length = 0)
+        public static object CreateEmptyObject(Type type, TypeRegistry typeRegistry, TypeDescriptor typeDescriptor, Func<object> initializer = null, int length = 0)
         {
             if (initializer != null)
                 return initializer();
@@ -31,16 +32,24 @@ namespace AnySerializer
                 return typeRegistry.GetFactory(type).Invoke();
 
             var typeSupport = new TypeSupport(type);
-            var typeHasMutated = false;
             // if we are asked to create an instance of an interface, try to initialize using a valid concrete type
             if (typeSupport.IsInterface && !typeSupport.IsEnumerable)
             {
-                var concreteType = typeSupport.ConcreteTypes.FirstOrDefault();
-                if (concreteType == null)
-                    throw new InvalidOperationException($"Unable to locate a concrete type for '{typeSupport.Type.FullName}'! Cannot create instance.");
+                if (typeDescriptor != null)
+                {
+                    // override the type passed with the one embedded in the typeDescriptors
+                    type = Type.GetType(typeDescriptor.FullName);
+                    typeSupport = new TypeSupport(type);
+                }
+                else
+                {
+                    // try a known concrete type from typeSupport
+                    var concreteType = typeSupport.KnownConcreteTypes.FirstOrDefault();
+                    if (concreteType == null)
+                        throw new InvalidOperationException($"Unable to locate a concrete type for '{typeSupport.Type.FullName}'! Cannot create instance.");
 
-                typeSupport = new TypeSupport(concreteType);
-                typeHasMutated = true;
+                    typeSupport = new TypeSupport(concreteType);
+                }
             }
 
             if (typeSupport.IsArray)
@@ -348,7 +357,7 @@ namespace AnySerializer
         /// <returns></returns>
         public static TypeId GetTypeId(TypeId typeId)
         {
-            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap);
+            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap & ~TypeId.AbstractInterface);
         }
 
         /// <summary>
@@ -393,6 +402,16 @@ namespace AnySerializer
         public static bool IsTypeDescriptorMap(TypeId type)
         {
             return ((int)type & (int)TypeId.TypeDescriptorMap) == (int)TypeId.TypeDescriptorMap;
+        }
+
+        /// <summary>
+        /// True if the type is an abstract interface
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool IsAbstractInterface(TypeId type)
+        {
+            return ((int)type & (int)TypeId.AbstractInterface) == (int)TypeId.AbstractInterface;
         }
     }
 }

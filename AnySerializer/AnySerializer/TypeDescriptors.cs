@@ -35,7 +35,10 @@ namespace AnySerializer
             {
                 // add a new type to the map
                 var typeId = _currentTypeId;
-                Types.Add(new TypeDescriptor(typeId, type.Type.FullName));
+                var fullName = type.Type.AssemblyQualifiedName;
+                if (type.IsInterface)
+                    fullName = type.ConcreteType.AssemblyQualifiedName;
+                Types.Add(new TypeDescriptor(typeId, fullName));
                 _currentTypeId++;
                 return typeId;
             }
