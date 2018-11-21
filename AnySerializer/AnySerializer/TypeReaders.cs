@@ -367,10 +367,11 @@ namespace AnySerializer
         {
             // read in the data
             var typeDescriptors = new TypeDescriptors();
-
-            var bytes = reader.ReadBytes(dataLength);
-            typeDescriptors.Deserialize(bytes);
-
+            if (dataLength > 0)
+            {
+                var bytes = reader.ReadBytes(dataLength);
+                typeDescriptors.Deserialize(bytes);
+            }
             return typeDescriptors;
         }
     }

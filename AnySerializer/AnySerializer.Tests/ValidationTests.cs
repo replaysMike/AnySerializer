@@ -25,13 +25,30 @@ namespace AnySerializer.Tests
         }
 
         [Test]
-        public void ShouldValidate_BasicObjectWithEmbeddedTypeDescriptors()
+        public void ShouldValidate_BasicObjectWithEmptyEmbeddedTypeDescriptors()
         {
             var test = new BasicObject()
             {
                 Id = 1,
                 IsEnabled = true,
                 Description = "Test",
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test, embedTypes: true);
+            var isValid = provider.Validate(bytes);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [Test]
+        public void ShouldValidate_BasicObjectWithEmbeddedTypeDescriptors()
+        {
+            var test = new InterfaceWithMultipleConcreteObject()
+            {
+                UnknownClass = new TestInterfaceObject3()
+                {
+                    Id = 1
+                }
             };
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test, embedTypes: true);
