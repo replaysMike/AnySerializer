@@ -366,21 +366,10 @@ namespace AnySerializer
         internal static TypeDescriptors GetTypeDescriptorMap(BinaryReader reader, int dataLength)
         {
             // read in the data
-            var startPosition = reader.BaseStream.Position;
-            var i = 0L;
             var typeDescriptors = new TypeDescriptors();
-            while(i < dataLength)
-            {
-                var position = reader.BaseStream.Position;
-                // read the type id
-                var typeId = reader.ReadUInt16();
-                // read the type name
-                var typeFullName = reader.ReadString();
-                var bytesRead = reader.BaseStream.Position - position;
-                i += bytesRead;
 
-                typeDescriptors.Types.Add(new TypeDescriptor(typeId, typeFullName));
-            }
+            var bytes = reader.ReadBytes(dataLength);
+            typeDescriptors.Deserialize(bytes);
 
             return typeDescriptors;
         }

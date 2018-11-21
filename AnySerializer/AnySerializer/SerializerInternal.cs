@@ -87,13 +87,8 @@ namespace AnySerializer
                     // make room for the length prefix
                     writer.Seek(Constants.LengthHeaderSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
 
-                    foreach (var typeDescriptor in typeDescriptors.Types)
-                    {
-                        // write the 2-byte type id
-                        writer.Write(typeDescriptor.TypeId);
-                        // write the full type name
-                        writer.Write(typeDescriptor.FullName);
-                    }
+                    var descriptorBytes = typeDescriptors.Serialize();
+                    writer.Write(descriptorBytes, 0, descriptorBytes.Length);
 
                     var currentPosition = writer.BaseStream.Position;
                     // write the length header at the start of this object
