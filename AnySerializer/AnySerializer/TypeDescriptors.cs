@@ -1,5 +1,7 @@
-﻿using System;
+﻿using LZ4;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -65,6 +67,50 @@ namespace AnySerializer
         public bool Contains(ushort typeId)
         {
             return Types.Any(x => x.TypeId == typeId);
+        }
+
+        /// <summary>
+        /// Serialize the type descriptors using LZ4 compression
+        /// </summary>
+        /// <returns></returns>
+        public byte[] Serialize()
+        {
+            using(var stream = new MemoryStream())
+            {
+                using(var lz4Stream = new LZ4Stream(stream, LZ4StreamMode.Compress))
+                {
+                    using(var writer = new StreamWriter(lz4Stream))
+                    {
+                        foreach (var typeDescriptor in Types)
+                            writer.Write($"{typeDescriptor.TypeId}|{typeDescriptor.FullName}\r\n");
+                    }
+                }
+                return stream.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Deserialize the type descriptors using LZ4 compression
+        /// </summary>
+        /// <param name="bytes"></param>
+        public void Deserialize(byte[] bytes)
+        {
+            using (var stream = new MemoryStream(bytes))
+            {
+                using (var lz4Stream = new LZ4Stream(stream, LZ4StreamMode.Decompress))
+                {
+                    using (var reader = new StreamReader(lz4Stream))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            string[] parts = line.Split(new char[] { '|' }, 2);
+
+                            Types.Add(new TypeDescriptor(ushort.Parse(parts[0]), parts[1]));
+                        }
+                    }
+                }
+            }
         }
     }
 
