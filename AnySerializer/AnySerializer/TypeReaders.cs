@@ -32,7 +32,7 @@ namespace AnySerializer
             var currentDepth = 0;
             var dataLength = 0;
             var headerLength = 0;
-            return ReadObject(reader, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, string.Empty, ignoreAttributes, typeRegistry, TypeDescriptors.None, null, ref dataLength, ref headerLength);
+            return ReadObject(reader, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, string.Empty, ignoreAttributes, typeRegistry, TypeDescriptors.None, ref dataLength, ref headerLength);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace AnySerializer
         /// <param name="dataLength"></param>
         /// <param name="headerLength"></param>
         /// <returns></returns>
-        internal static object ReadObject(BinaryReader reader, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor, ref int dataLength, ref int headerLength)
+        internal static object ReadObject(BinaryReader reader, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, ref int dataLength, ref int headerLength)
         {
             var objectFactory = new ObjectFactory();
             dataLength = 0;
@@ -99,10 +99,11 @@ namespace AnySerializer
             {
                 // process a type descriptor map, then continue
                 typeDescriptors = GetTypeDescriptorMap(reader, dataLength);
-                return ReadObject(reader, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, null, ref dataLength, ref headerLength);
+                return ReadObject(reader, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
             }
 
             // only interfaces can store type descriptors
+            TypeDescriptor typeDescriptor = null;
             if(typeDescriptors?.Types.Any() == true && isAbstractInterface)
             {
                 // type descriptors are embedded, read in the type
@@ -226,7 +227,7 @@ namespace AnySerializer
             var elementTypeLoader = new TypeLoader(typeSupport.ElementType);
             while (i < length)
             {
-                var element = ReadObject(reader, elementTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var element = ReadObject(reader, elementTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newList.Add(element);
@@ -257,7 +258,7 @@ namespace AnySerializer
             var enumerator = (IEnumerable)newObj;
             while (i < length)
             {
-                var element = ReadObject(reader, genericTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var element = ReadObject(reader, genericTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newList.Add(element);
@@ -290,7 +291,7 @@ namespace AnySerializer
             var index = 0;
             while (i < length)
             {
-                var element = ReadObject(reader, typeSupports[index], customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var element = ReadObject(reader, typeSupports[index], customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 if (typeSupport.IsValueTuple)
@@ -324,10 +325,10 @@ namespace AnySerializer
 
             while (i < length)
             {
-                var key = ReadObject(reader, keyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var key = ReadObject(reader, keyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                var value = ReadObject(reader, valueTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var value = ReadObject(reader, valueTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newDictionary.Add(key, value);
@@ -346,6 +347,8 @@ namespace AnySerializer
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
+                if (path.Equals(".Customers"))
+                    System.Diagnostics.Debugger.Break();
                 var dataLength = 0;
                 var headerLength = 0;
                 var propertyTypeLoader = new TypeLoader(property.PropertyType);
@@ -353,7 +356,7 @@ namespace AnySerializer
                     continue;
                 if (propertyTypeLoader.IsDelegate)
                     continue;
-                var propertyValue = ReadObject(reader, propertyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var propertyValue = ReadObject(reader, propertyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 TypeUtil.SetPropertyValue(property, newObj, propertyValue, path);
             }
 
@@ -367,7 +370,7 @@ namespace AnySerializer
                     continue;
                 if (fieldTypeLoader.IsDelegate)
                     continue;
-                var fieldValue = ReadObject(reader, fieldTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor, ref dataLength, ref headerLength);
+                var fieldValue = ReadObject(reader, fieldTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 TypeUtil.SetFieldValue(field, newObj, fieldValue, path);
             }
 
