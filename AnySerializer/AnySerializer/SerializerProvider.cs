@@ -32,7 +32,7 @@ namespace AnySerializer
         /// Serialize an object to a byte array
         /// </summary>
         /// <param name="obj">The object to serialize</param>
-        /// <param name="embedTypes">True to embed types in serialization data (increases size)</param>
+        /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, bool embedTypes = false)
         {
