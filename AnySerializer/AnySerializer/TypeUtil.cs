@@ -4,146 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using TypeSupport;
+using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
 {
     public static class TypeUtil
     {
-        /// <summary>
-        /// Create a new, empty object of a given type
-        /// </summary>
-        /// <param name="type">The type of object to construct</param>
-        /// <param name="typeRegistry">A type registry for constructing unknown types</param>
-        /// <param name="typeDescriptor">A type descriptor that indicates the embedded concrete type for an interface type</param>
-        /// <param name="initializer">An optional initializer to use to create the object</param>
-        /// <param name="length">For array types, the length of the array to create</param>
-        /// <returns></returns>
-        public static object CreateEmptyObject(Type type, TypeRegistry typeRegistry, TypeDescriptor typeDescriptor, Func<object> initializer = null, int length = 0)
-        {
-            if (initializer != null)
-                return initializer();
-
-            // check the type registry for a custom type mapping
-            if (typeRegistry?.ContainsType(type) == true)
-                type = typeRegistry.GetMapping(type);
-            // check the type registry for a custom type factory
-            if (typeRegistry?.ContainsFactoryType(type) == true)
-                return typeRegistry.GetFactory(type).Invoke();
-
-            var typeSupport = new TypeSupport(type);
-            // if we are asked to create an instance of an interface, try to initialize using a valid concrete type
-            if (typeSupport.IsInterface && !typeSupport.IsEnumerable)
-            {
-                if (typeDescriptor != null)
-                {
-                    // override the type passed with the one embedded in the typeDescriptors
-                    type = Type.GetType(typeDescriptor.FullName);
-                    typeSupport = new TypeSupport(type);
-                }
-                else
-                {
-                    // try a known concrete type from typeSupport
-                    var concreteType = typeSupport.KnownConcreteTypes.FirstOrDefault();
-                    if (concreteType == null)
-                        throw new InvalidOperationException($"Unable to locate a concrete type for '{typeSupport.Type.FullName}'! Cannot create instance.");
-
-                    typeSupport = new TypeSupport(concreteType);
-                }
-            }
-
-            if (typeSupport.IsArray)
-                return Activator.CreateInstance(typeSupport.Type, new object[] { length });
-            else if (typeSupport.IsDictionary)
-            {
-                var genericType = typeSupport.Type.GetGenericArguments().ToList();
-                if (genericType.Count != 2)
-                    throw new InvalidOperationException("IDictionary should contain 2 element types.");
-                Type[] typeArgs = { genericType[0], genericType[1] };
-
-                var listType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
-                var newDictionary = Activator.CreateInstance(listType) as IDictionary;
-                return newDictionary;
-            }
-            else if (typeSupport.IsEnumerable && !typeSupport.IsImmutable)
-            {
-                var genericType = typeSupport.Type.GetGenericArguments().FirstOrDefault();
-                if (genericType != null)
-                {
-                    var listType = typeof(List<>).MakeGenericType(genericType);
-                    var newList = (IList)Activator.CreateInstance(listType);
-                    return newList;
-                }
-                return Enumerable.Empty<object>();
-            }
-            else if (typeSupport.Type.ContainsGenericParameters)
-            {
-                // create a generic type and create an instance
-                // to accomplish this, we need to create a new generic type using the type arguments from the interface
-                // and the concrete class definition. voodoo!
-                var originalTypeSupport = new TypeSupport(type);
-                var genericArguments = originalTypeSupport.Type.GetGenericArguments();
-                var newType = typeSupport.Type.MakeGenericType(genericArguments);
-                object newObject = null;
-                if (typeSupport.HasEmptyConstructor)
-                    newObject = Activator.CreateInstance(newType);
-                else
-                    newObject = FormatterServices.GetUninitializedObject(newType);
-                return newObject;
-            }
-            else if (typeSupport.HasEmptyConstructor && !typeSupport.Type.ContainsGenericParameters)
-                return Activator.CreateInstance(typeSupport.Type);
-            else if (typeSupport.IsImmutable)
-                return null;
-
-            return FormatterServices.GetUninitializedObject(typeSupport.Type);
-        }
-
-        /// <summary>
-        /// Create a new, empty object of a given type
-        /// </summary>
-        /// <param name="initializer">An optional initializer to use to create the object</param>
-        /// <param name="length">For array types, the length of the array to create</param>
-        /// <returns></returns>
-        public static T CreateEmptyObject<T>(Func<T> initializer = null, int length = 0)
-        {
-            var type = typeof(T);
-            if (initializer != null)
-                return initializer();
-
-            var typeSupport = new TypeSupport(type);
-
-            if (typeSupport.IsArray)
-                return (T)Activator.CreateInstance(typeSupport.Type, new object[] { length });
-            else if (typeSupport.IsDictionary)
-            {
-                var genericType = typeSupport.Type.GetGenericArguments().ToList();
-                if (genericType.Count != 2)
-                    throw new InvalidOperationException("IDictionary should contain 2 element types.");
-                Type[] typeArgs = { genericType[0], genericType[1] };
-
-                var listType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
-                var newDictionary = Activator.CreateInstance(listType) as IDictionary;
-                return (T)newDictionary;
-            }
-            else if (typeSupport.IsEnumerable && !typeSupport.IsImmutable)
-            {
-                var genericType = typeSupport.Type.GetGenericArguments().FirstOrDefault();
-                if (genericType != null)
-                {
-                    var listType = typeof(List<>).MakeGenericType(genericType);
-                    var newList = (IList)Activator.CreateInstance(listType);
-                    return (T)newList;
-                }
-                return (T)Enumerable.Empty<object>();
-            }
-            else if (typeSupport.HasEmptyConstructor)
-                return (T)Activator.CreateInstance(typeSupport.Type);
-            else if (typeSupport.IsImmutable)
-                return default(T);
-            return (T)FormatterServices.GetUninitializedObject(typeSupport.Type);
-        }
-
         /// <summary>
         /// Get all of the properties of an object
         /// </summary>
@@ -289,7 +157,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeId GetTypeId(TypeSupport typeSupport)
+        public static TypeId GetTypeId(TypeLoader typeSupport)
         {
             if (typeSupport.IsArray)
                 return TypeId.Array;
@@ -332,11 +200,11 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeSupport GetType(TypeId type)
+        public static TypeLoader GetType(TypeId type)
         {
             if (!TypeManagement.TypeMapping.Values.Contains(type))
                 throw new InvalidOperationException($"Invalid type specified: {(int)type}");
-            var typeSupport = new TypeSupport(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
+            var typeSupport = new TypeLoader(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
             return typeSupport;
         }
 
