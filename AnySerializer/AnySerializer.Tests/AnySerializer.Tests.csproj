@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\TypeSupport\TypeSupport\TypeSupport\TypeSupport.csproj" />
     <ProjectReference Include="..\AnySerializer\AnySerializer.csproj" />
   </ItemGroup>
 

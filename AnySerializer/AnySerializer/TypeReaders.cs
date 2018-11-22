@@ -349,6 +349,12 @@ namespace AnySerializer
                 path = $"{rootPath}.{property.Name}";
                 var dataLength = 0;
                 var headerLength = 0;
+                var indexParameters = property.GetIndexParameters();
+                if (indexParameters.Any())
+                    continue;
+                // if the property has no set method, don't set any value it will be handled in the field
+                if (property.SetMethod == null)
+                    continue;
                 var propertyExtendedType = new ExtendedType(property.PropertyType);
                 if (property.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;

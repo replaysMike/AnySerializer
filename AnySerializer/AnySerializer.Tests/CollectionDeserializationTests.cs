@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using AnySerializer.Tests.TestObjects;
+using NUnit.Framework;
 using System.Collections.Generic;
 
 namespace AnySerializer.Tests
@@ -69,6 +70,19 @@ namespace AnySerializer.Tests
             var deserializedTest = provider.Deserialize<Dictionary<int, int?>>(bytes);
 
             CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_CustomCollectionWithIndexer()
+        {
+            var test = new CustomCollectionObject();
+            test.Add("test", 1);
+            test.Add("test 2", 2);
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<CustomCollectionObject>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
         }
     }
 }

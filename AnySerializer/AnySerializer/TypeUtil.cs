@@ -85,8 +85,12 @@ namespace AnySerializer
             var property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (property != null)
             {
-                if(property.SetMethod != null)
-                    property.SetValue(obj, valueToSet);
+                if (property.SetMethod != null)
+                {
+                    var indexParameters = property.GetIndexParameters();
+                    if (!indexParameters.Any())
+                        property.SetValue(obj, valueToSet);
+                }
                 else
                 {
                     // if this is an auto-property with a backing field, set it
@@ -116,7 +120,11 @@ namespace AnySerializer
             try
             {
                 if (property.SetMethod != null)
-                    property.SetValue(obj, valueToSet);
+                {
+                    var indexParameters = property.GetIndexParameters();
+                    if(!indexParameters.Any())
+                        property.SetValue(obj, valueToSet);
+                }
                 else
                 {
                     // if this is an auto-property with a backing field, set it

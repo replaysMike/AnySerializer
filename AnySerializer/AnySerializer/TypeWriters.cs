@@ -247,7 +247,14 @@ namespace AnySerializer
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
+                var indexParameters = property.GetIndexParameters();
                 var propertyExtendedType = new ExtendedType(property.PropertyType);
+                // if this is an indexer for obj, skip processing it
+                if (indexParameters.Any())
+                    continue;
+                // if the property has no set method, don't set any value it will be handled in the field
+                if (property.SetMethod == null)
+                    continue;
                 var propertyValue = property.GetValue(obj);
                 propertyExtendedType.SetConcreteTypeFromInstance(propertyValue);
                 if (property.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
