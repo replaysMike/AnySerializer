@@ -31,7 +31,7 @@ namespace AnySerializer
         /// Add a type to the type descriptors
         /// </summary>
         /// <param name="type"></param>
-        public ushort AddKnownType(TypeLoader type)
+        public ushort AddKnownType(ExtendedType type)
         {
             var existingType = Types.FirstOrDefault(x => x.FullName.Equals(type.Type.FullName));
             if (existingType == null)

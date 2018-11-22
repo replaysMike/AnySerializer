@@ -38,7 +38,7 @@ namespace AnySerializer
 
             var objectTree = new Dictionary<int, object>();
 
-            var typeSupport = new TypeLoader(sourceObject.GetType());
+            var typeSupport = new ExtendedType(sourceObject.GetType());
 
             // drop any objects we are ignoring by attribute
             if (typeSupport.Attributes.Any(x => ignoreAttributes.Contains(x)))

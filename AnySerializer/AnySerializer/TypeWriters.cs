@@ -23,7 +23,7 @@ namespace AnySerializer
         /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
         /// <param name="useTypeDescriptors">True to embed a type descriptor map in the serialized data</param>
-        internal static TypeDescriptors Write(BinaryWriter writer, object obj, TypeLoader typeSupport, int maxDepth, IDictionary<int, object> objectTree, ICollection<Type> ignoreAttributes, bool useTypeDescriptors = false)
+        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, int maxDepth, IDictionary<int, object> objectTree, ICollection<Type> ignoreAttributes, bool useTypeDescriptors = false)
         {
             var customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
             {
@@ -40,7 +40,7 @@ namespace AnySerializer
             return typeDescriptors;
         }
 
-        internal static long WriteObject(BinaryWriter writer, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             TypeId objectTypeId = TypeId.None;
             try
@@ -105,7 +105,7 @@ namespace AnySerializer
                         TypeWriters.WriteTupleType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
                         break;
                     case TypeId.Enum:
-                        TypeWriters.WriteValueType(writer, lengthStartPosition, obj, new TypeLoader(typeof(Enum)), customSerializers);
+                        TypeWriters.WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)), customSerializers);
                         break;
                     default:
                         TypeWriters.WriteValueType(writer, lengthStartPosition, obj, typeSupport, customSerializers);
@@ -126,7 +126,7 @@ namespace AnySerializer
             return dataLength;
         }
 
-        internal static void WriteValueType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers)
+        internal static void WriteValueType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers)
         {
             var @switch = new Dictionary<Type, Action> {
                         { typeof(bool), () => writer.Write((bool)obj) },
@@ -170,37 +170,37 @@ namespace AnySerializer
                 @switch[typeSupport.NullableBaseType]();
         }
 
-        internal static void WriteArrayType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static void WriteArrayType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element
             var array = (IEnumerable)obj;
 
-            var elementTypeLoader = new TypeLoader(typeSupport.ElementType);
-            TypeLoader elementConcreteTypeLoader = null;
+            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            ExtendedType elementConcreteExtendedType = null;
             foreach (var item in array)
             {
-                if (item != null && elementConcreteTypeLoader == null)
-                    elementConcreteTypeLoader = item.GetType().TypeSupport();
-                WriteObject(writer, item, elementConcreteTypeLoader ?? elementTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                if (item != null && elementConcreteExtendedType == null)
+                    elementConcreteExtendedType = item.GetType().GetExtendedType();
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
         }
 
-        internal static void WriteEnumerableType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static void WriteEnumerableType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element
             var enumerable = (IEnumerable)obj;
 
-            var elementTypeLoader = new TypeLoader(typeSupport.ElementType);
-            TypeLoader elementConcreteTypeLoader = null;
+            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            ExtendedType elementConcreteExtendedType = null;
             foreach (var item in enumerable)
             {
-                if (item != null && elementConcreteTypeLoader == null)
-                    elementConcreteTypeLoader = item.GetType().TypeSupport();
-                WriteObject(writer, item, elementConcreteTypeLoader ?? elementTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                if (item != null && elementConcreteExtendedType == null)
+                    elementConcreteExtendedType = item.GetType().GetExtendedType();
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
         }
 
-        internal static void WriteTupleType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static void WriteTupleType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element, treat a tuple as a list of objects
             var enumerable = new List<object>();
@@ -209,35 +209,35 @@ namespace AnySerializer
             else if (typeSupport.IsTuple)
                 enumerable = obj.GetTupleItemObjects();
 
-            var valueTypeLoaders = typeSupport.GenericArgumentTypes.Select(x => x.TypeSupport()).ToArray();
+            var valueExtendedTypes = typeSupport.GenericArgumentTypes.Select(x => x.GetExtendedType()).ToArray();
             var index = 0;
             foreach (var item in enumerable)
             {
-                WriteObject(writer, item, valueTypeLoaders[index], customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item, valueExtendedTypes[index], customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
                 index++;
             }
         }
 
-        internal static void WriteDictionaryType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static void WriteDictionaryType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element
             var dictionary = (IDictionary)obj;
 
-            var keyTypeLoader = typeSupport.GenericArgumentTypes.First().TypeSupport();
-            var valueTypeLoader = typeSupport.GenericArgumentTypes.Skip(1).First().TypeSupport();
-            TypeLoader valueConcreteTypeLoader = null;
+            var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
+            var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
+            ExtendedType valueConcreteExtendedType = null;
             foreach (DictionaryEntry item in dictionary)
             {
                 // write the key
-                WriteObject(writer, item.Key, keyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item.Key, keyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
                 // write the value
-                if (item.Value != null && valueConcreteTypeLoader == null)
-                    valueConcreteTypeLoader = item.Value.GetType().TypeSupport();
-                WriteObject(writer, item.Value, valueConcreteTypeLoader ?? valueTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                if (item.Value != null && valueConcreteExtendedType == null)
+                    valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
+                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
         }
 
-        internal static void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal static void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element
             var properties = TypeUtil.GetProperties(obj).OrderBy(x => x.Name);
@@ -247,27 +247,27 @@ namespace AnySerializer
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
-                var propertyTypeLoader = new TypeLoader(property.PropertyType);
+                var propertyExtendedType = new ExtendedType(property.PropertyType);
                 var propertyValue = property.GetValue(obj);
-                propertyTypeLoader.SetConcreteTypeFromInstance(propertyValue);
+                propertyExtendedType.SetConcreteTypeFromInstance(propertyValue);
                 if (property.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
-                if (propertyTypeLoader.IsDelegate)
+                if (propertyExtendedType.IsDelegate)
                     continue;
-                WriteObject(writer, propertyValue, propertyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, propertyValue, propertyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
 
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.Name}";
-                var fieldTypeLoader = new TypeLoader(field.FieldType);
+                var fieldExtendedType = new ExtendedType(field.FieldType);
                 var fieldValue = field.GetValue(obj);
-                fieldTypeLoader.SetConcreteTypeFromInstance(fieldValue);
+                fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
                 if (field.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
-                if (fieldTypeLoader.IsDelegate)
+                if (fieldExtendedType.IsDelegate)
                     continue;
-                WriteObject(writer, fieldValue, fieldTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, fieldValue, fieldExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
             }
         }
     }
