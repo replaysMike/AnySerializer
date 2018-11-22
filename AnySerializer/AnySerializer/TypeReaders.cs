@@ -22,7 +22,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
         /// <returns></returns>
-        internal static object Read(BinaryReader reader, TypeLoader typeSupport, int maxDepth, IDictionary<int, object> objectTree, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
+        internal static object Read(BinaryReader reader, ExtendedType typeSupport, int maxDepth, IDictionary<int, object> objectTree, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
         {
             var customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
             {
@@ -52,7 +52,7 @@ namespace AnySerializer
         /// <param name="dataLength"></param>
         /// <param name="headerLength"></param>
         /// <returns></returns>
-        internal static object ReadObject(BinaryReader reader, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, ref int dataLength, ref int headerLength)
+        internal static object ReadObject(BinaryReader reader, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, ref int dataLength, ref int headerLength)
         {
             var objectFactory = new ObjectFactory();
             dataLength = 0;
@@ -128,10 +128,10 @@ namespace AnySerializer
             }
 
             // get the type support object for this object type
-            var objectTypeLoader = TypeUtil.GetType(objectTypeId);
+            var objectExtendedType = TypeUtil.GetType(objectTypeId);
 
             // does this object map to something expected?
-            if (!TypeUtil.GetTypeId(objectTypeLoader).Equals(objectTypeId))
+            if (!TypeUtil.GetTypeId(objectExtendedType).Equals(objectTypeId))
                 throw new InvalidOperationException($"Serialized data wants to map {objectTypeId} to {typeSupport.Type.Name}, invalid data.");
 
             object newObj = null;
@@ -170,7 +170,7 @@ namespace AnySerializer
                 case TypeId.IEnumerable:
                     return TypeReaders.ReadEnumerableType(newObj, reader, dataLength, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor);
                 case TypeId.Enum:
-                    return TypeReaders.ReadValueType(reader, dataLength, new TypeLoader(typeof(Enum)), customSerializers, currentDepth, maxDepth, path, ignoreAttributes, typeRegistry);
+                    return TypeReaders.ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), customSerializers, currentDepth, maxDepth, path, ignoreAttributes, typeRegistry);
                 case TypeId.Tuple:
                     return TypeReaders.ReadTupleType(newObj, reader, dataLength, typeSupport, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, typeDescriptor);
             }
@@ -178,7 +178,7 @@ namespace AnySerializer
             return TypeReaders.ReadValueType(reader, dataLength, typeSupport, customSerializers, currentDepth, maxDepth, path, ignoreAttributes, typeRegistry);
         }
 
-        internal static object ReadValueType(BinaryReader reader, int dataLength, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry)
+        internal static object ReadValueType(BinaryReader reader, int dataLength, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry)
         {
             // read a value type
             var @switch = new Dictionary<Type, Func<object>> {
@@ -213,7 +213,7 @@ namespace AnySerializer
             return @switch[typeSupport.NullableBaseType]();
         }
 
-        internal static Array ReadArrayType(object newObj, BinaryReader reader, int length, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
+        internal static Array ReadArrayType(object newObj, BinaryReader reader, int length, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
         {
             // length = entire collection
             // read each element
@@ -224,10 +224,10 @@ namespace AnySerializer
             var listType = typeof(List<>).MakeGenericType(genericType);
             var newList = (IList)Activator.CreateInstance(listType);
             var enumerator = (IEnumerable)newObj;
-            var elementTypeLoader = new TypeLoader(typeSupport.ElementType);
+            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             while (i < length)
             {
-                var element = ReadObject(reader, elementTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var element = ReadObject(reader, elementExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newList.Add(element);
@@ -243,7 +243,7 @@ namespace AnySerializer
             return (Array)newObj;
         }
 
-        internal static object ReadEnumerableType(object newObj, BinaryReader reader, int length, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
+        internal static object ReadEnumerableType(object newObj, BinaryReader reader, int length, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
         {
             // length = entire collection
             // read each element
@@ -251,14 +251,14 @@ namespace AnySerializer
             var dataLength = 0;
             var headerLength = 0;
             var genericType = typeSupport.Type.GetGenericArguments().First();
-            var genericTypeLoader = new TypeLoader(genericType);
+            var genericExtendedType = new ExtendedType(genericType);
             var listType = typeof(List<>).MakeGenericType(genericType);
             var newList = (IList)Activator.CreateInstance(listType);
             newObj = newList;
             var enumerator = (IEnumerable)newObj;
             while (i < length)
             {
-                var element = ReadObject(reader, genericTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var element = ReadObject(reader, genericExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newList.Add(element);
@@ -268,7 +268,7 @@ namespace AnySerializer
             return newObj;
         }
 
-        internal static object ReadTupleType(object newObj, BinaryReader reader, int length, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
+        internal static object ReadTupleType(object newObj, BinaryReader reader, int length, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
         {
             // length = entire collection
             // read each element, treat a tuple as a list of objects
@@ -276,12 +276,12 @@ namespace AnySerializer
             var dataLength = 0;
             var headerLength = 0;
             var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-            var typeSupports = genericTypes.Select(x => new TypeLoader(x)).ToList();
+            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
             Type tupleType = null;
             if (typeSupport.IsValueTuple)
-                tupleType = TupleExtensions.CreateValueTuple(typeSupports.Select(x => x.Type).ToList());
+                tupleType = TypeSupport.Extensions.TupleExtensions.CreateValueTuple(typeSupports.Select(x => x.Type).ToList());
             else
-                tupleType = TupleExtensions.CreateTuple(typeSupports.Select(x => x.Type).ToList());
+                tupleType = TypeSupport.Extensions.TupleExtensions.CreateTuple(typeSupports.Select(x => x.Type).ToList());
             object newTuple = null;
             if(!string.IsNullOrEmpty(typeDescriptor?.FullName))
                 newTuple = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, typeRegistry);
@@ -305,7 +305,7 @@ namespace AnySerializer
             return newTuple;
         }
 
-        internal static object ReadDictionaryType(object newObj, BinaryReader reader, int length, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
+        internal static object ReadDictionaryType(object newObj, BinaryReader reader, int length, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
         {
             // length = entire collection
             // read each element
@@ -313,9 +313,9 @@ namespace AnySerializer
             var dataLength = 0;
             var headerLength = 0;
             var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-            var typeSupports = genericTypes.Select(x => new TypeLoader(x)).ToList();
-            var keyTypeLoader = typeSupports.First();
-            var valueTypeLoader = typeSupports.Skip(1).First();
+            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+            var keyExtendedType = typeSupports.First();
+            var valueExtendedType = typeSupports.Skip(1).First();
             Type[] typeArgs = { genericTypes[0], genericTypes[1] };
 
             var listType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
@@ -325,10 +325,10 @@ namespace AnySerializer
 
             while (i < length)
             {
-                var key = ReadObject(reader, keyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var key = ReadObject(reader, keyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                var value = ReadObject(reader, valueTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var value = ReadObject(reader, valueExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newDictionary.Add(key, value);
@@ -338,7 +338,7 @@ namespace AnySerializer
             return newObj;
         }
 
-        internal static object ReadObjectType(object newObj, BinaryReader reader, int length, TypeLoader typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
+        internal static object ReadObjectType(object newObj, BinaryReader reader, int length, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, IDictionary<int, object> objectTree, string path, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry, TypeDescriptors typeDescriptors, TypeDescriptor typeDescriptor)
         {
             // read each property into the object
             var properties = TypeUtil.GetProperties(newObj).OrderBy(x => x.Name);
@@ -347,16 +347,14 @@ namespace AnySerializer
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
-                if (path.Equals(".Customers"))
-                    System.Diagnostics.Debugger.Break();
                 var dataLength = 0;
                 var headerLength = 0;
-                var propertyTypeLoader = new TypeLoader(property.PropertyType);
+                var propertyExtendedType = new ExtendedType(property.PropertyType);
                 if (property.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
-                if (propertyTypeLoader.IsDelegate)
+                if (propertyExtendedType.IsDelegate)
                     continue;
-                var propertyValue = ReadObject(reader, propertyTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var propertyValue = ReadObject(reader, propertyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 TypeUtil.SetPropertyValue(property, newObj, propertyValue, path);
             }
 
@@ -365,12 +363,12 @@ namespace AnySerializer
                 path = $"{rootPath}.{field.Name}";
                 var dataLength = 0;
                 var headerLength = 0;
-                var fieldTypeLoader = new TypeLoader(field.FieldType);
+                var fieldExtendedType = new ExtendedType(field.FieldType);
                 if (field.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
                     continue;
-                if (fieldTypeLoader.IsDelegate)
+                if (fieldExtendedType.IsDelegate)
                     continue;
-                var fieldValue = ReadObject(reader, fieldTypeLoader, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
+                var fieldValue = ReadObject(reader, fieldExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 TypeUtil.SetFieldValue(field, newObj, fieldValue, path);
             }
 

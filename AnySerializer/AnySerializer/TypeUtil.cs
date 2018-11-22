@@ -3,9 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using TypeSupport;
-using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
@@ -84,7 +82,6 @@ namespace AnySerializer
         public static void SetPropertyValue(string propertyName, object obj, object valueToSet)
         {
             var type = obj.GetType();
-            // var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (property != null)
             {
@@ -107,7 +104,6 @@ namespace AnySerializer
         public static void SetFieldValue(string fieldName, object obj, object valueToSet)
         {
             var type = obj.GetType();
-            // var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (field != null)
                 field.SetValue(obj, valueToSet);
@@ -157,7 +153,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeId GetTypeId(TypeLoader typeSupport)
+        public static TypeId GetTypeId(ExtendedType typeSupport)
         {
             if (typeSupport.IsArray)
                 return TypeId.Array;
@@ -200,11 +196,11 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeLoader GetType(TypeId type)
+        public static ExtendedType GetType(TypeId type)
         {
             if (!TypeManagement.TypeMapping.Values.Contains(type))
                 throw new InvalidOperationException($"Invalid type specified: {(int)type}");
-            var typeSupport = new TypeLoader(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
+            var typeSupport = new ExtendedType(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
             return typeSupport;
         }
 

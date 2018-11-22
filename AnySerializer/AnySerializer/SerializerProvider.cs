@@ -55,7 +55,7 @@ namespace AnySerializer
             if (bytes.Length == 0)
                 return default(T);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace AnySerializer
             if (bytes.Length == 0)
                 return default(T);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
         }
 
         public T Deserialize<T>(Stream stream)
@@ -113,7 +113,7 @@ namespace AnySerializer
             var bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
         }
 
         /// <summary>

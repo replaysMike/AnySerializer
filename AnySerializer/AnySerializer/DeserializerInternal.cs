@@ -23,13 +23,13 @@ namespace AnySerializer
         /// Inspect a type and deserialize its contents
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="sourceTypeLoader"></param>
+        /// <param name="sourceExtendedType"></param>
         /// <param name="sourceBytes"></param>
         /// <param name="maxDepth"></param>
         /// <param name="ignoreAttributes"></param>
         /// <param name="typeRegistry">Custom type registry</param>
         /// <returns></returns>
-        internal T InspectAndDeserialize<T>(TypeLoader sourceTypeLoader, byte[] sourceBytes, int maxDepth, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
+        internal T InspectAndDeserialize<T>(ExtendedType sourceExtendedType, byte[] sourceBytes, int maxDepth, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
         {
             if (sourceBytes == null)
                 return default(T);
@@ -40,7 +40,7 @@ namespace AnySerializer
             {
                 using (var reader = new BinaryReader(stream))
                 {
-                    return (T)TypeReaders.Read(reader, typeof(T).TypeSupport(), maxDepth, objectTree, ignoreAttributes, typeRegistry);
+                    return (T)TypeReaders.Read(reader, typeof(T).GetExtendedType(), maxDepth, objectTree, ignoreAttributes, typeRegistry);
                 }
             }
         }

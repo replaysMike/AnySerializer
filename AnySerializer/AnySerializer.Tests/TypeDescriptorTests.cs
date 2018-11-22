@@ -54,14 +54,14 @@ namespace AnySerializer.Tests
         private TypeDescriptors CreateTypeDescriptors()
         {
             var typeDescriptors = new TypeDescriptors();
-            typeDescriptors.AddKnownType(typeof(string).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(object).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(short).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(int).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(long).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(double).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(decimal).TypeSupport());
-            typeDescriptors.AddKnownType(typeof(float).TypeSupport());
+            typeDescriptors.AddKnownType(typeof(string).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(object).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(short).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(int).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(long).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(double).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(decimal).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(float).GetExtendedType());
             return typeDescriptors;
         }
     }

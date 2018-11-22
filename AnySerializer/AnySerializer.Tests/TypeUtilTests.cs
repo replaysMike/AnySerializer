@@ -14,38 +14,38 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldTypes_MapCorrectly()
         {
-            Assert.AreEqual(new TypeLoader(typeof(Array)), TypeUtil.GetType(TypeId.Array));
-            Assert.AreEqual(new TypeLoader(typeof(bool)), TypeUtil.GetType(TypeId.Bool));
-            Assert.AreEqual(new TypeLoader(typeof(byte)), TypeUtil.GetType(TypeId.Byte));
-            Assert.AreEqual(new TypeLoader(typeof(char)), TypeUtil.GetType(TypeId.Char));
-            Assert.AreEqual(new TypeLoader(typeof(decimal)), TypeUtil.GetType(TypeId.Decimal));
-            Assert.AreEqual(new TypeLoader(typeof(double)), TypeUtil.GetType(TypeId.Double));
-            Assert.AreEqual(new TypeLoader(typeof(float)), TypeUtil.GetType(TypeId.Float));
-            Assert.AreEqual(new TypeLoader(typeof(IDictionary<,>)), TypeUtil.GetType(TypeId.IDictionary));
-            Assert.AreEqual(new TypeLoader(typeof(IEnumerable)), TypeUtil.GetType(TypeId.IEnumerable));
-            Assert.AreEqual(new TypeLoader(typeof(int)), TypeUtil.GetType(TypeId.Int));
-            Assert.AreEqual(new TypeLoader(typeof(long)), TypeUtil.GetType(TypeId.Long));
-            Assert.AreEqual(new TypeLoader(typeof(object)), TypeUtil.GetType(TypeId.Object));
-            Assert.AreEqual(new TypeLoader(typeof(short)), TypeUtil.GetType(TypeId.Short));
-            Assert.AreEqual(new TypeLoader(typeof(string)), TypeUtil.GetType(TypeId.String));
+            Assert.AreEqual(new ExtendedType(typeof(Array)), TypeUtil.GetType(TypeId.Array));
+            Assert.AreEqual(new ExtendedType(typeof(bool)), TypeUtil.GetType(TypeId.Bool));
+            Assert.AreEqual(new ExtendedType(typeof(byte)), TypeUtil.GetType(TypeId.Byte));
+            Assert.AreEqual(new ExtendedType(typeof(char)), TypeUtil.GetType(TypeId.Char));
+            Assert.AreEqual(new ExtendedType(typeof(decimal)), TypeUtil.GetType(TypeId.Decimal));
+            Assert.AreEqual(new ExtendedType(typeof(double)), TypeUtil.GetType(TypeId.Double));
+            Assert.AreEqual(new ExtendedType(typeof(float)), TypeUtil.GetType(TypeId.Float));
+            Assert.AreEqual(new ExtendedType(typeof(IDictionary<,>)), TypeUtil.GetType(TypeId.IDictionary));
+            Assert.AreEqual(new ExtendedType(typeof(IEnumerable)), TypeUtil.GetType(TypeId.IEnumerable));
+            Assert.AreEqual(new ExtendedType(typeof(int)), TypeUtil.GetType(TypeId.Int));
+            Assert.AreEqual(new ExtendedType(typeof(long)), TypeUtil.GetType(TypeId.Long));
+            Assert.AreEqual(new ExtendedType(typeof(object)), TypeUtil.GetType(TypeId.Object));
+            Assert.AreEqual(new ExtendedType(typeof(short)), TypeUtil.GetType(TypeId.Short));
+            Assert.AreEqual(new ExtendedType(typeof(string)), TypeUtil.GetType(TypeId.String));
         }
 
         [Test]
-        public void TypeLoaderAndType_Should_BeEqual()
+        public void ExtendedTypeAndType_Should_BeEqual()
         {
-            Assert.AreEqual(new TypeLoader(typeof(bool)), typeof(bool));
+            Assert.AreEqual(new ExtendedType(typeof(bool)), typeof(bool));
         }
 
         [Test]
-        public void TypeLoaderAndTypeLoader_Should_BeEqual()
+        public void ExtendedTypeAndExtendedType_Should_BeEqual()
         {
-            Assert.AreEqual(new TypeLoader(typeof(bool)), new TypeLoader(typeof(bool)));
+            Assert.AreEqual(new ExtendedType(typeof(bool)), new ExtendedType(typeof(bool)));
         }
 
         [Test]
-        public void TypeLoaderAndTypeLoader_ShouldNot_BeEqual()
+        public void ExtendedTypeAndExtendedType_ShouldNot_BeEqual()
         {
-            Assert.AreNotEqual(new TypeLoader(typeof(bool)), new TypeLoader(typeof(int)));
+            Assert.AreNotEqual(new ExtendedType(typeof(bool)), new ExtendedType(typeof(int)));
         }
 
         [Test]
