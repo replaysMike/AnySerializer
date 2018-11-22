@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TypeSupport;
 
 namespace AnySerializer
 {
@@ -30,7 +31,7 @@ namespace AnySerializer
         /// Add a type to the type descriptors
         /// </summary>
         /// <param name="type"></param>
-        public ushort AddKnownType(TypeSupport type)
+        public ushort AddKnownType(TypeLoader type)
         {
             var existingType = Types.FirstOrDefault(x => x.FullName.Equals(type.Type.FullName));
             if (existingType == null)

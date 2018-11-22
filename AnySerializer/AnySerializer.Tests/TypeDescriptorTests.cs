@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System.IO;
+using TypeSupport.Extensions;
 
 namespace AnySerializer.Tests
 {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TypeSupport;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
@@ -37,7 +38,7 @@ namespace AnySerializer
 
             var objectTree = new Dictionary<int, object>();
 
-            var typeSupport = new TypeSupport(sourceObject.GetType());
+            var typeSupport = new TypeLoader(sourceObject.GetType());
 
             // drop any objects we are ignoring by attribute
             if (typeSupport.Attributes.Any(x => ignoreAttributes.Contains(x)))

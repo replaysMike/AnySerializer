@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
+using TypeSupport;
 
 namespace AnySerializer
 {
@@ -54,7 +55,7 @@ namespace AnySerializer
             if (bytes.Length == 0)
                 return default(T);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
         }
 
         /// <summary>
@@ -74,7 +75,11 @@ namespace AnySerializer
             TypeRegistry typeRegistry = null;
             if(typeMaps != null && typeMaps.Length > 0)
             {
-                typeRegistry = new TypeRegistry(typeMaps);
+                TypeRegistry.Configure((config) =>
+                {
+                    foreach(var typeMap in typeMaps)
+                        config.Mappings.Add(typeMap);
+                });
             }
 
             return Deserialize<T>(bytes, typeRegistry);
@@ -94,7 +99,7 @@ namespace AnySerializer
             if (bytes.Length == 0)
                 return default(T);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
+            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
         }
 
         public T Deserialize<T>(Stream stream)
@@ -108,7 +113,7 @@ namespace AnySerializer
             var bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
 
-            return _deserializer.InspectAndDeserialize<T>(new TypeSupport<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new TypeLoader<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
         }
 
         /// <summary>
