@@ -84,16 +84,14 @@ namespace AnySerializer
 
             // read the length prefix (minus the length field itself)
             dataLength = reader.ReadInt32();
-            var dataLengthOriginal = dataLength;
+            var dataRemaining = reader.BaseStream.Length - reader.BaseStream.Position;
+            if (dataLength-sizeof(int) > dataRemaining)
+                throw new InvalidDataException($"The object length read ({dataLength}) for type {objectTypeId} at path {path} cannot exceed the remaining size ({dataRemaining}) of the stream!");
             if (dataLength > 0)
             {
                 dataLength -= sizeof(int);
                 headerLength += sizeof(int);
             }
-
-            // an null value was written
-            if (dataLength == 0 && isNullValue)
-                return null;
 
             if (isTypeDescriptorMap)
             {
@@ -111,6 +109,10 @@ namespace AnySerializer
                 headerLength += sizeof(ushort);
                 typeDescriptor = typeDescriptors.GetTypeDescriptor(typeId);
             }
+
+            // an null value was written
+            if (dataLength == 0 && isNullValue)
+                return null;
 
             // an empty initialized object was written
             try
@@ -342,11 +344,13 @@ namespace AnySerializer
         {
             // read each property into the object
             var properties = TypeUtil.GetProperties(newObj).OrderBy(x => x.Name);
-            var fields = TypeUtil.GetFields(newObj).OrderBy(x => x.Name);
+            var fields = TypeUtil.GetFields(newObj, true).OrderBy(x => x.Name);
             var rootPath = path;
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
+                //if (path.Equals(".GameRound.BlindsBySeatPosition"))
+                //    System.Diagnostics.Debugger.Break();
                 var dataLength = 0;
                 var headerLength = 0;
                 var indexParameters = property.GetIndexParameters();

@@ -241,12 +241,14 @@ namespace AnySerializer
         {
             // write each element
             var properties = TypeUtil.GetProperties(obj).OrderBy(x => x.Name);
-            var fields = TypeUtil.GetFields(obj).OrderBy(x => x.Name);
+            var fields = TypeUtil.GetFields(obj, true).OrderBy(x => x.Name);
 
             var rootPath = path;
             foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
+                //if (path.Equals(".GameRound.BlindsBySeatPosition"))
+                //    System.Diagnostics.Debugger.Break();
                 var indexParameters = property.GetIndexParameters();
                 var propertyExtendedType = new ExtendedType(property.PropertyType);
                 // if this is an indexer for obj, skip processing it
