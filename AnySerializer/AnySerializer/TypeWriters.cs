@@ -244,7 +244,7 @@ namespace AnySerializer
             var fields = TypeUtil.GetFields(obj, true).OrderBy(x => x.Name);
 
             var rootPath = path;
-            foreach (var property in properties)
+            /*foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
                 //if (path.Equals(".GameRound.BlindsBySeatPosition"))
@@ -264,7 +264,7 @@ namespace AnySerializer
                 if (propertyExtendedType.IsDelegate)
                     continue;
                 WriteObject(writer, propertyValue, propertyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeDescriptors);
-            }
+            }*/
 
             foreach (var field in fields)
             {

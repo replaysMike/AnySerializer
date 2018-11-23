@@ -346,7 +346,7 @@ namespace AnySerializer
             var properties = TypeUtil.GetProperties(newObj).OrderBy(x => x.Name);
             var fields = TypeUtil.GetFields(newObj, true).OrderBy(x => x.Name);
             var rootPath = path;
-            foreach (var property in properties)
+            /*foreach (var property in properties)
             {
                 path = $"{rootPath}.{property.Name}";
                 //if (path.Equals(".GameRound.BlindsBySeatPosition"))
@@ -366,7 +366,7 @@ namespace AnySerializer
                     continue;
                 var propertyValue = ReadObject(reader, propertyExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 TypeUtil.SetPropertyValue(property, newObj, propertyValue, path);
-            }
+            }*/
 
             foreach (var field in fields)
             {
