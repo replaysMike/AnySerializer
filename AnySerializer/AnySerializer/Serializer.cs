@@ -20,6 +20,18 @@ namespace AnySerializer
         }
 
         /// <summary>
+        /// Serialize an object of type <typeparamref name="T"/> to a byte array
+        /// </summary>
+        /// <typeparam name="T">The type to serialize</typeparam>
+        /// <param name="obj"></param>
+        /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
+        /// <returns>Byte array</returns>
+        public static byte[] Serialize<T>(T obj, bool embedTypes)
+        {
+            return Extensions.SerializerExtensions.Serialize<T>(obj, embedTypes);
+        }
+
+        /// <summary>
         /// Deserialize an object of type <typeparamref name="T"/>
         /// </summary>
         /// <typeparam name="T">The type to deserialize</typeparam>

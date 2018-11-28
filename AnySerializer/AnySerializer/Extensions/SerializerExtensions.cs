@@ -11,9 +11,19 @@ namespace AnySerializer.Extensions
         /// <summary>
         /// Serialize an object to a byte array
         /// </summary>
+        /// <returns></returns>
+        public static byte[] Serialize<T>(this T obj)
+        {
+            var provider = new SerializerProvider();
+            return provider.Serialize<T>(obj);
+        }
+
+        /// <summary>
+        /// Serialize an object to a byte array
+        /// </summary>
         /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
         /// <returns></returns>
-        public static byte[] Serialize<T>(this T obj, bool embedTypes = false)
+        public static byte[] Serialize<T>(this T obj, bool embedTypes)
         {
             var provider = new SerializerProvider();
             return provider.Serialize<T>(obj, embedTypes);
