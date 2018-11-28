@@ -9,9 +9,9 @@
     <PackageProjectUrl>https://github.com/replaysMike/AnySerializer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/replaysMike/AnySerializer</RepositoryUrl>
     <PackageTags>serialize deserialize object serialization deserialization refactor software michael brown</PackageTags>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <FileVersion>1.0.3.0</FileVersion>
-    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -20,11 +20,8 @@
 
   <ItemGroup>
     <PackageReference Include="lz4net" Version="1.0.15.93" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1-beta1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\TypeSupport\TypeSupport\TypeSupport\TypeSupport.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="TypeSupport" Version="1.0.4" />
   </ItemGroup>
 
 </Project>
