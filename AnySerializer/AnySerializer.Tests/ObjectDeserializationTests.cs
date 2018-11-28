@@ -263,5 +263,20 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(typeof(TestInterfaceObject3), testDeserialized.UnknownClass.GetType());
         }
+
+        [Test]
+        public void ShouldDeserialize_IgnoreConstantsObject()
+        {
+            var test = new IgnoreConstantsObject()
+            {
+                A = 100,
+                Z = 200,
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<IgnoreConstantsObject>(bytes);
+
+            Assert.AreEqual(test, testDeserialized);
+        }
     }
 }

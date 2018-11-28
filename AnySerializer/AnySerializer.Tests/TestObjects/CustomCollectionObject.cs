@@ -6,7 +6,8 @@ namespace AnySerializer.Tests.TestObjects
     public class CustomCollectionObject : IEquatable<CustomCollectionObject>
     {
         private readonly Dictionary<string, int> _innerStorage = new Dictionary<string, int>();
-
+        private int _a;
+        private int _z;
         public ICollection<string> Keys
         {
             get { return _innerStorage.Keys; }
@@ -41,6 +42,12 @@ namespace AnySerializer.Tests.TestObjects
             }
         }
 
+        public CustomCollectionObject(int a, int z)
+        {
+            _a = a;
+            _z = z;
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (CustomCollectionObject)obj;
@@ -51,6 +58,8 @@ namespace AnySerializer.Tests.TestObjects
         {
             var dictionaryComparer = new DictionaryComparer<string, int>();
             return ((_innerStorage == null && other._innerStorage == null) || dictionaryComparer.Equals(_innerStorage, other._innerStorage))
+                && _a == other._a
+                && _z == other._z
                 ;
         }
     }

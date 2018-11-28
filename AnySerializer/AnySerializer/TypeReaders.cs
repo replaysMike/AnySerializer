@@ -362,6 +362,8 @@ namespace AnySerializer
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.Name}";
+                if (field.Name == "_tablePlayers")
+                    System.Diagnostics.Debugger.Break();
                 var dataLength = 0;
                 var headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);

@@ -253,12 +253,14 @@ namespace AnySerializer
         internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
         {
             // write each element
-            var fields = obj.GetFields(FieldOptions.All).OrderBy(x => x.Name);
+            var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
 
             var rootPath = path;
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.Name}";
+                if (field.Name == "_tablePlayers")
+                    System.Diagnostics.Debugger.Break();
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);

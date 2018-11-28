@@ -75,7 +75,7 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldDeserialize_CustomCollectionWithIndexer()
         {
-            var test = new CustomCollectionObject();
+            var test = new CustomCollectionObject(100, 200);
             test.Add("test", 1);
             test.Add("test 2", 2);
             var provider = new SerializerProvider();
