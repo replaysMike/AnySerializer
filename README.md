@@ -20,7 +20,7 @@ PM> Install-Package AnySerializer
 using AnySerializer;
 
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
 
 ```
@@ -35,7 +35,7 @@ If you find you need to map interfaces to concrete types that are contained in d
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddMapping<ICustomInterfaceName, ConcreteClassName>();
@@ -49,7 +49,7 @@ or alternatively, a type factory for creating empty objects:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddFactory<ICustomInterfaceName, ConcreteClassName>(() => new ConcreteClassName());
@@ -62,7 +62,7 @@ and an alternate form for adding one-or-more mappings:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .Create<ConcreteClassName>();
@@ -74,7 +74,7 @@ or single type one-or-more factories:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .CreateUsing<ConcreteClassName>(() => new ConcreteClassName());
@@ -90,7 +90,7 @@ To embed type descriptors in the serialized data:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize(true); // true to embed type data
+var bytes = Serializer.Serialize(originalObject, true); // true to embed type data
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
 ```
 
@@ -102,9 +102,9 @@ A validator is provided for verifying if a serialized object contains valid dese
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
-var isSuccess = Serializer.Validate(bytes);
-Assert.IsTrue(isSuccess);
+var bytes = Serializer.Serialize(originalObject);
+var isValid = Serializer.Validate(bytes);
+Assert.IsTrue(isValid);
 ```
 
 ### Extensions
@@ -148,7 +148,7 @@ var object2 = Serializer.Deserialize<MyComplexObject>(object1bytes);
 object2.Id = 100;
 
 // view the changes between them
-var diff = AnyDiff.Diff(object1, object2);
+var diff = object1.Diff(object2);
 Assert.AreEqual(diff.Count, 1);
 ```
 
