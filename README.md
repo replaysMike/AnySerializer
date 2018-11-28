@@ -20,7 +20,7 @@ PM> Install-Package AnySerializer
 using AnySerializer;
 
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
 
 ```
@@ -35,7 +35,7 @@ If you find you need to map interfaces to concrete types that are contained in d
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddMapping<ICustomInterfaceName, ConcreteClassName>();
@@ -49,7 +49,7 @@ or alternatively, a type factory for creating empty objects:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMaps = TypeRegistry.Configure((config) => {
   config.AddFactory<ICustomInterfaceName, ConcreteClassName>(() => new ConcreteClassName());
@@ -62,7 +62,7 @@ and an alternate form for adding one-or-more mappings:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .Create<ConcreteClassName>();
@@ -74,7 +74,7 @@ or single type one-or-more factories:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
+var bytes = Serializer.Serialize(originalObject);
 
 var typeMap = TypeRegistry.For<ICustomInterfaceName>()
                 .CreateUsing<ConcreteClassName>(() => new ConcreteClassName());
@@ -82,15 +82,29 @@ var typeMap = TypeRegistry.For<ICustomInterfaceName>()
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes, typeMap);
 ```
 
+### Complicated scenarios - Embedded Type Descriptors to the rescue!
+
+There are some scenarios that cause grief when serializing certain types. Things like abstract interfaces and anonymous types require information about how to serialize them. To solve this, you can choose to embed type information for these scenarios which will increase the size of the serialized data slightly - which is optimized and compressed so it's not that much data.
+
+To embed type descriptors in the serialized data:
+
+```csharp
+var originalObject = new SomeComplexTypeWithDeepStructure();
+var bytes = Serializer.Serialize(originalObject, true); // true to embed type data
+var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
+```
+
+What does it do? Essentially what is going on here is we store a reference to the assembly and type which tells AnySerializer how to restore the data when deserializing. Only types that are interfaces and anonymous types are stored and concrete classes are ignored. When this _isn't_ applied AnySerializer can still try to figure out what to do, but it doesn't guarantee that it will succeed if types are contained in assemblies it isn't aware of, or where there are multiple concrete classes available for an interface. 
+
 ### Validating binary data
 
 A validator is provided for verifying if a serialized object contains valid deserializable data that has not been corrupted:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize();
-var isSuccess = Serializer.Validate(bytes);
-Assert.IsTrue(isSuccess);
+var bytes = Serializer.Serialize(originalObject);
+var isValid = Serializer.Validate(bytes);
+Assert.IsTrue(isValid);
 ```
 
 ### Extensions
@@ -104,6 +118,21 @@ var originalObject = new SomeComplexTypeWithDeepStructure();
 var bytes = originalObject.Serialize();
 var restoredObject = bytes.Deserialize<SomeComplexTypeWithDeepStructure>();
 ```
+
+### Scenarios supported
+
+- [x] All basic types, enums, generics, collections
+- [x] Read-only types
+- [x] Circular references
+- [x] Ignore attributes on unwanted fields/properties
+- [x] Constructorless classes
+- [x] Anonymous types
+- [x] Ignoring of delegates and events, other non-serializable types
+- [x] Resolving abstract interfaces to concrete types
+- [x] Manually specifying custom type mappings through the registry
+- [x] Embedded type descriptors
+- [x] Data validator
+- [ ] High performance testing and optimization
 
 ### Other applications
 
@@ -119,7 +148,7 @@ var object2 = Serializer.Deserialize<MyComplexObject>(object1bytes);
 object2.Id = 100;
 
 // view the changes between them
-var diff = AnyDiff.Diff(object1, object2);
+var diff = object1.Diff(object2);
 Assert.AreEqual(diff.Count, 1);
 ```
 
