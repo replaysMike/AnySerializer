@@ -9,7 +9,8 @@
         /// <summary>
         /// The size of the length header
         /// </summary>
-        public const int LengthHeaderSize = sizeof(int);
+        public const int LengthHeaderSize = sizeof(uint);
+        public const int ObjectReferenceIdSize = sizeof(ushort);
         /// <summary>
         /// The maximum recursion depth to use, by default.
         /// </summary>

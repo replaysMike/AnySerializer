@@ -229,7 +229,7 @@ namespace AnySerializer
         /// <returns></returns>
         public static TypeId GetTypeId(TypeId typeId)
         {
-            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap & ~TypeId.AbstractInterface);
+            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap & ~TypeId.TypeMapped);
         }
 
         /// <summary>
@@ -281,9 +281,9 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool IsAbstractInterface(TypeId type)
+        public static bool IsTypeMapped(TypeId type)
         {
-            return ((int)type & (int)TypeId.AbstractInterface) == (int)TypeId.AbstractInterface;
+            return ((int)type & (int)TypeId.TypeMapped) == (int)TypeId.TypeMapped;
         }
     }
 }

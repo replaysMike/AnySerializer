@@ -17,10 +17,10 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + (
+            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Length *
                 (
-                    Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(int)) /*valuesize*/
+                    Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
                 )
             );
             Assert.AreEqual(expectedSize, bytes.Length);
@@ -35,10 +35,10 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + (
+            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Count *
                 (
-                    Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(int)) /*valuesize*/
+                    Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
                 ) 
             );
             Assert.AreEqual(expectedSize, bytes.Length);
@@ -58,11 +58,11 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + (
+            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Count *
                 (
-                    (Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(int)) /*keysize*/
-                    + (Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(int)) /*valuesize*/
+                    (Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*keysize*/
+                    + (Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
                 ) 
             ));
             Assert.AreEqual(expectedSize, bytes.Length);

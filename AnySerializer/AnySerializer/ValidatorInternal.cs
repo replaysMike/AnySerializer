@@ -26,8 +26,9 @@ namespace AnySerializer
                     {
                         /**
                          * Chunk Format 
-                         * [ChunkType]      1 byte (byte)
-                         * [ChunkLength]    4 bytes (Int32)
+                         * [ChunkType]              1 byte (byte)
+                         * [ChunkLength]            4 bytes (Int32)
+                         * [ObjectReferenceId]      2 bytes (UInt16)
                          * [OptionalTypeDescriptor] 2 bytes (UInt16)
                          * [Data]           [ChunkLength-Int32] bytes
                          * 
@@ -39,7 +40,7 @@ namespace AnySerializer
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 isValid = false;
             }
@@ -58,7 +59,7 @@ namespace AnySerializer
             var objectTypeIdByte = reader.ReadByte();
             var objectTypeId = (TypeId)objectTypeIdByte;
             var isNullValue = TypeUtil.IsNullValue(objectTypeId);
-            var isAbstractInterface = TypeUtil.IsAbstractInterface(objectTypeId);
+            var isTypeMapped = TypeUtil.IsTypeMapped(objectTypeId);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap(objectTypeId);
 
             // strip the flags and get only the type
@@ -66,15 +67,8 @@ namespace AnySerializer
             var isValueType = TypeUtil.IsValueType(objectTypeIdOnly);
             var length = reader.ReadInt32();
             var lengthStartPosition = reader.BaseStream.Position;
+            ushort objectReferenceId = 0;
             ushort typeDescriptorId = 0;
-
-            // only interfaces can store type descriptors
-            if (typeDescriptors != null && isAbstractInterface)
-            {
-                typeDescriptorId = reader.ReadUInt16();
-                if (!typeDescriptors.Contains(typeDescriptorId))
-                    return false;
-            }
 
             if (isTypeDescriptorMap)
             {
@@ -83,6 +77,19 @@ namespace AnySerializer
                 typeDescriptors = TypeReaders.GetTypeDescriptorMap(reader, dataLength);
                 // continue reading the data
                 return ReadChunk(reader, typeDescriptors);
+            }
+            else
+            {
+                // read the object reference id
+                objectReferenceId = reader.ReadUInt16();
+            }
+
+            // only interfaces can store type descriptors
+            if (typeDescriptors != null && isTypeMapped)
+            {
+                typeDescriptorId = reader.ReadUInt16();
+                if (!typeDescriptors.Contains(typeDescriptorId))
+                    return false;
             }
 
             var objectTypeSupport = TypeUtil.GetType(objectTypeIdOnly);
@@ -104,7 +111,7 @@ namespace AnySerializer
                 if (!isChunkValid)
                     return false;
 
-                if(reader.BaseStream.Position - lengthStartPosition == 0)
+                if(reader.BaseStream.Position - lengthStartPosition - sizeof(ushort) == 0)
                 {
                     // it's a value type, read the full data
                     var data = reader.ReadBytes(length - Constants.LengthHeaderSize);

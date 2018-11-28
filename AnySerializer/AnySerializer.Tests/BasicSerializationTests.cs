@@ -16,7 +16,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + string length + 1 byte (7 bit string header)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + test.Length + 1);
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + test.Length + 1);
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(long));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(long));
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(int));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int));
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(short));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(short));
         }
 
         [Test]
@@ -64,7 +64,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(float));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(float));
         }
 
         [Test]
@@ -76,7 +76,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(double));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(double));
         }
 
         [Test]
@@ -88,7 +88,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(decimal));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(decimal));
         }
 
         [Test]
@@ -100,7 +100,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the object type size + size header + sizeof(data)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(bool));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(bool));
         }
 
         [Test]
@@ -112,7 +112,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + sizeof(long)
-            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + sizeof(char));
+            Assert.AreEqual(bytes.Length, Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(char));
         }
     }
 }

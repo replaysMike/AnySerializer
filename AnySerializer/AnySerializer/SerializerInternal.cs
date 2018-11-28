@@ -36,8 +36,6 @@ namespace AnySerializer
             if (sourceObject == null)
                 return null;
 
-            var objectTree = new Dictionary<int, object>();
-
             var typeSupport = new ExtendedType(sourceObject.GetType());
 
             // drop any objects we are ignoring by attribute
@@ -54,7 +52,7 @@ namespace AnySerializer
             {
                 using (var writer = new BinaryWriter(stream))
                 {
-                    typeDescriptors = TypeWriters.Write(writer, sourceObject, typeSupport, maxDepth, objectTree, ignoreAttributes, useTypeDescriptors);
+                    typeDescriptors = TypeWriters.Write(writer, sourceObject, typeSupport, maxDepth, ignoreAttributes, useTypeDescriptors);
                 }
                 dataBytes = stream.ToArray();
             }

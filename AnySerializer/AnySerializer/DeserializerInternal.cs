@@ -34,13 +34,11 @@ namespace AnySerializer
             if (sourceBytes == null)
                 return default(T);
 
-            var objectTree = new Dictionary<int, object>();
-
             using (var stream = new MemoryStream(sourceBytes))
             {
                 using (var reader = new BinaryReader(stream))
                 {
-                    return (T)TypeReaders.Read(reader, typeof(T).GetExtendedType(), maxDepth, objectTree, ignoreAttributes, typeRegistry);
+                    return (T)TypeReaders.Read(reader, typeof(T).GetExtendedType(), maxDepth, ignoreAttributes, typeRegistry);
                 }
             }
         }
