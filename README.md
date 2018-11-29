@@ -135,6 +135,7 @@ var restoredObject = bytes.Deserialize<SomeComplexTypeWithDeepStructure>();
 - [x] Manually specifying custom type mappings through the registry
 - [x] Embedded type descriptors
 - [x] Data validator
+- [x] Custom collections
 - [ ] High performance testing and optimization
 
 ### Other applications
