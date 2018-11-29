@@ -84,5 +84,18 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, deserializedTest);
         }
+
+        [Test]
+        public void ShouldDeserialize_CustomCollectionAlt()
+        {
+            var test = new CustomCollectionAltObject<BasicObject>(100, "Test");
+            test.Add(new BasicObject { Id = 1, Description = "Description", IsEnabled = true });
+            test.Add(new BasicObject { Id = 2, Description = "Description 2", IsEnabled = true });
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<CustomCollectionAltObject<BasicObject>>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
     }
 }

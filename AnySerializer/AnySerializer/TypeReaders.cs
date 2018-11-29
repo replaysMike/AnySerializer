@@ -267,19 +267,14 @@ namespace AnySerializer
             var headerLength = 0;
             var genericType = typeSupport.Type.GetGenericArguments().First();
             var genericExtendedType = new ExtendedType(genericType);
-            var listType = typeof(List<>).MakeGenericType(genericType);
-            var newList = (IList)Activator.CreateInstance(listType);
-            newObj = newList;
-            var enumerator = (IEnumerable)newObj;
+            var addMethod = typeSupport.Type.GetMethod("Add");
             while (i < length)
             {
                 var element = ReadObject(reader, genericExtendedType, customSerializers, currentDepth, maxDepth, objectTree, path, ignoreAttributes, typeRegistry, typeDescriptors, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                newList.Add(element);
+                addMethod.Invoke(newObj, new object[] { element });
             }
-
-            // return the value
             return newObj;
         }
 
