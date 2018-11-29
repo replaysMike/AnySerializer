@@ -1,5 +1,7 @@
 # AnySerializer
 
+[![nuget](https://img.shields.io/nuget/v/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
+
 A CSharp library that can binary serialize any object quickly and easily. No attributes/decoration required!
 
 That's right, no need for `[Serializable]` or any other custom attributes on your classes!
