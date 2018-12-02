@@ -94,7 +94,7 @@ To embed type descriptors in the serialized data:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
-var bytes = Serializer.Serialize(originalObject, true); // true to embed type data
+var bytes = Serializer.Serialize(originalObject, SerializerOptions.EmbedTypes);
 var restoredObject = Serializer.Deserialize<SomeComplexTypeWithDeepStructure>(bytes);
 ```
 
