@@ -2,6 +2,7 @@
 
 [![nuget](https://img.shields.io/nuget/v/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
 [![nuget](https://img.shields.io/nuget/dt/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
+[![Build status](https://ci.appveyor.com/api/projects/status/gfwjabg1pta7em94?svg=true)](https://ci.appveyor.com/project/MichaelBrown/anyserializer)
 
 A CSharp library that can binary serialize any object quickly and easily. No attributes/decoration required!
 
