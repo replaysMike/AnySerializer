@@ -26,12 +26,12 @@ namespace AnySerializer
         /// <param name="sourceObject"></param>
         /// <param name="currentDepth"></param>
         /// <param name="maxDepth"></param>
+        /// <param name="options">The serialization options</param>
         /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
         /// <param name="path"></param>
-        /// <param name="useTypeDescriptors">True to embed a type descriptor map in the serialized data</param>
         /// <returns></returns>
-        internal byte[] InspectAndSerialize(object sourceObject, int maxDepth, ICollection<Type> ignoreAttributes, bool useTypeDescriptors)
+        internal byte[] InspectAndSerialize(object sourceObject, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes)
         {
             if (sourceObject == null)
                 return null;
@@ -52,7 +52,7 @@ namespace AnySerializer
             {
                 using (var writer = new BinaryWriter(stream))
                 {
-                    typeDescriptors = TypeWriters.Write(writer, sourceObject, typeSupport, maxDepth, ignoreAttributes, useTypeDescriptors);
+                    typeDescriptors = TypeWriters.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes);
                 }
                 dataBytes = stream.ToArray();
             }

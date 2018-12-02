@@ -274,8 +274,9 @@ namespace AnySerializer.Tests
             Assert.AreEqual(test, deserializedTest);
         }
 
+#if FEATURE_CUSTOM_VALUETUPLE
         [Test]
-        public void ShouldDeserialize_ValueTuple2()
+        public void ShouldDeserialize_ValueTuple()
         {
             var test = (10, "test");
             var provider = new SerializerProvider();
@@ -286,7 +287,7 @@ namespace AnySerializer.Tests
         }
 
         [Test]
-        public void ShouldDeserialize_ValueTuple3()
+        public void ShouldDeserialize_ValueTuple2()
         {
             var test = (10, "test", true);
             var provider = new SerializerProvider();
@@ -297,7 +298,7 @@ namespace AnySerializer.Tests
         }
 
         [Test]
-        public void ShouldDeserialize_ValueTuple4()
+        public void ShouldDeserialize_ValueTuple3()
         {
             var test = (10, "test", true, 3.14);
             var provider = new SerializerProvider();
@@ -306,5 +307,6 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, deserializedTest);
         }
+#endif
     }
 }

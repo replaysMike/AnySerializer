@@ -36,10 +36,20 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, bool embedTypes = false)
         {
+            return Serialize<T>(obj, embedTypes ? SerializerOptions.EmbedTypes : SerializerOptions.None);
+        }
+
+        /// <summary>
+        /// Serialize an object to a byte array
+        /// </summary>
+        /// <param name="obj">The object to serialize</param>
+        /// <param name="options">The serialization options</param>
+        /// <returns></returns>
+        public byte[] Serialize<T>(T obj, SerializerOptions options)
+        {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
-
-            return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, _ignoreAttributes, embedTypes);
+            return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes);
         }
 
         /// <summary>
@@ -50,12 +60,52 @@ namespace AnySerializer
         /// <returns></returns>
         public T Deserialize<T>(byte[] bytes)
         {
+            return Deserialize<T>(bytes, SerializerOptions.None);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options)
+        {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length == 0)
                 return default(T);
 
-            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <param name="typeMaps">A list of type mappings</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+            if (bytes.Length == 0)
+                return default(T);
+
+            TypeRegistry typeRegistry = null;
+            if (typeMaps != null && typeMaps.Length > 0)
+            {
+                TypeRegistry.Configure((config) =>
+                {
+                    foreach (var typeMap in typeMaps)
+                        config.Mappings.Add(typeMap);
+                });
+            }
+
+            return Deserialize<T>(bytes, options, typeRegistry);
         }
 
         /// <summary>
@@ -67,22 +117,25 @@ namespace AnySerializer
         /// <returns></returns>
         public T Deserialize<T>(byte[] bytes, params TypeMap[] typeMaps)
         {
+            return Deserialize<T>(bytes, SerializerOptions.None, typeMaps);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <param name="typeRegistry">A list of type mappings</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
+        {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length == 0)
                 return default(T);
 
-            TypeRegistry typeRegistry = null;
-            if(typeMaps != null && typeMaps.Length > 0)
-            {
-                TypeRegistry.Configure((config) =>
-                {
-                    foreach(var typeMap in typeMaps)
-                        config.Mappings.Add(typeMap);
-                });
-            }
-
-            return Deserialize<T>(bytes, typeRegistry);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes, typeRegistry);
         }
 
         /// <summary>
@@ -94,15 +147,10 @@ namespace AnySerializer
         /// <returns></returns>
         public T Deserialize<T>(byte[] bytes, TypeRegistry typeRegistry)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
-            if (bytes.Length == 0)
-                return default(T);
-
-            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes, typeRegistry);
+            return Deserialize<T>(bytes, SerializerOptions.None, typeRegistry);
         }
 
-        public T Deserialize<T>(Stream stream)
+        public T Deserialize<T>(Stream stream, SerializerOptions options)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -113,7 +161,12 @@ namespace AnySerializer
             var bytes = new byte[stream.Length];
             stream.Read(bytes, 0, bytes.Length);
 
-            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, _ignoreAttributes);
+            return _deserializer.InspectAndDeserialize<T>(new ExtendedType<T>(), bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes);
+        }
+
+        public T Deserialize<T>(Stream stream)
+        {
+            return Deserialize<T>(stream, SerializerOptions.None);
         }
 
         /// <summary>

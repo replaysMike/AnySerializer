@@ -21,6 +21,17 @@ namespace AnySerializer.Extensions
         /// <summary>
         /// Serialize an object to a byte array
         /// </summary>
+        /// <param name="options">The serialization options</param>
+        /// <returns></returns>
+        public static byte[] Serialize<T>(this T obj, SerializerOptions options)
+        {
+            var provider = new SerializerProvider();
+            return provider.Serialize<T>(obj, options);
+        }
+
+        /// <summary>
+        /// Serialize an object to a byte array
+        /// </summary>
         /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
         /// <returns></returns>
         public static byte[] Serialize<T>(this T obj, bool embedTypes)
@@ -71,6 +82,20 @@ namespace AnySerializer.Extensions
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <param name="typeMaps">A list of type mappings</param>
+        /// <returns></returns>
+        public static T Deserialize<T>(this byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        {
+            var provider = new SerializerProvider();
+            return provider.Deserialize<T>(bytes, options, typeMaps);
+        }
+
+        /// <summary>
+        /// Deserialize an object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
         public static T Deserialize<T>(this byte[] bytes, TypeRegistry typeRegistry)
@@ -83,12 +108,27 @@ namespace AnySerializer.Extensions
         /// Deserialize an object
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="stream"></param>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public static T Deserialize<T>(this Stream stream)
+        public static T Deserialize<T>(this byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
         {
             var provider = new SerializerProvider();
-            return provider.Deserialize<T>(stream);
+            return provider.Deserialize<T>(bytes, options, typeRegistry);
+        }
+
+        /// <summary>
+        /// Deserialize an object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="stream"></param>
+        /// <param name="options">The serialization options</param>
+        /// <returns></returns>
+        public static T Deserialize<T>(this Stream stream, SerializerOptions options)
+        {
+            var provider = new SerializerProvider();
+            return provider.Deserialize<T>(stream, options);
         }
     }
 }

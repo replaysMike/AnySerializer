@@ -36,11 +36,12 @@ namespace AnySerializer
         /// </summary>
         /// <typeparam name="T">The type to deserialize</typeparam>
         /// <param name="bytes"></param>
+        /// <param name="options">The serializer options</param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(byte[] bytes, params TypeMap[] typeMaps)
+        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
         {
-            return Extensions.SerializerExtensions.Deserialize<T>(bytes, typeMaps);
+            return Extensions.SerializerExtensions.Deserialize<T>(bytes, options, typeMaps);
         }
 
         /// <summary>
@@ -48,11 +49,12 @@ namespace AnySerializer
         /// </summary>
         /// <typeparam name="T">The type to deserialize</typeparam>
         /// <param name="bytes"></param>
+        /// <param name="options">The serializer options</param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(byte[] bytes, TypeRegistry typeRegistry)
+        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
         {
-            return Extensions.SerializerExtensions.Deserialize<T>(bytes, typeRegistry);
+            return Extensions.SerializerExtensions.Deserialize<T>(bytes, options, typeRegistry);
         }
 
         /// <summary>
@@ -60,10 +62,11 @@ namespace AnySerializer
         /// </summary>
         /// <typeparam name="T">The type to deserialize</typeparam>
         /// <param name="stream">A stream of bytes</param>
+        /// <param name="options">The serializer options</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(Stream stream)
+        public static T Deserialize<T>(Stream stream, SerializerOptions options)
         {
-            return Extensions.SerializerExtensions.Deserialize<T>(stream);
+            return Extensions.SerializerExtensions.Deserialize<T>(stream, options);
         }
 
         /// <summary>

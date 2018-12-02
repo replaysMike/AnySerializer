@@ -85,11 +85,15 @@ namespace AnySerializer
             var property = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (property != null)
             {
-                if (property.SetMethod != null)
+                if (property.GetSetMethod(true) != null)
                 {
                     var indexParameters = property.GetIndexParameters();
                     if (!indexParameters.Any())
+#if FEATURE_SETVALUE
                         property.SetValue(obj, valueToSet);
+#else
+                        property.SetValue(obj, valueToSet, null);
+#endif
                 }
                 else
                 {
@@ -119,11 +123,15 @@ namespace AnySerializer
         {
             try
             {
-                if (property.SetMethod != null)
+                if (property.GetSetMethod(true) != null)
                 {
                     var indexParameters = property.GetIndexParameters();
                     if(!indexParameters.Any())
+#if FEATURE_SETVALUE
                         property.SetValue(obj, valueToSet);
+#else
+                    property.SetValue(obj, valueToSet, null);
+#endif
                 }
                 else
                 {
@@ -174,7 +182,7 @@ namespace AnySerializer
 
             // some other special circumstances
 
-            if (typeSupport.IsTuple)
+            if (typeSupport.IsTuple || typeSupport.IsValueTuple)
             {
                 return TypeManagement.TypeMapping[typeof(Tuple<,>)];
             }
