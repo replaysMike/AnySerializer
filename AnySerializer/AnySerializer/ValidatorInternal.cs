@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
@@ -25,6 +26,8 @@ namespace AnySerializer
                     using (var reader = new BinaryReader(stream))
                     {
                         /**
+                         * [SettingsByte]           1 byte (SerializerDataSettings)
+                         * 
                          * Chunk Format 
                          * [ChunkType]              1 byte (byte)
                          * [ChunkLength]            4 bytes (Int32)
@@ -36,7 +39,10 @@ namespace AnySerializer
                          * By reading if you've read all of the data bytes, you know you've read 
                          * the whole structure.
                          */
-                        isValid = ReadChunk(reader, typeDescriptors);
+                        // read in byte 0, the data settings
+                        var dataSettings = (SerializerDataSettings)reader.ReadByte();
+                        // read in all chunks
+                        isValid = ReadChunk(reader, typeDescriptors, dataSettings);
                     }
                 }
             }
@@ -53,7 +59,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
-        private bool ReadChunk(BinaryReader reader, TypeDescriptors typeDescriptors)
+        private bool ReadChunk(BinaryReader reader, TypeDescriptors typeDescriptors, SerializerDataSettings dataSettings)
         {
             var isChunkValid = true;
             var objectTypeIdByte = reader.ReadByte();
@@ -65,18 +71,28 @@ namespace AnySerializer
             // strip the flags and get only the type
             var objectTypeIdOnly = TypeUtil.GetTypeId(objectTypeIdByte);
             var isValueType = TypeUtil.IsValueType(objectTypeIdOnly);
-            var length = reader.ReadInt32();
+
+            uint length = 0;
+            if(dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+                length = reader.ReadUInt16();
+            else
+                length = reader.ReadUInt32();
             var lengthStartPosition = reader.BaseStream.Position;
             ushort objectReferenceId = 0;
             ushort typeDescriptorId = 0;
 
+
             if (isTypeDescriptorMap)
             {
-                var dataLength = length - sizeof(int);
+                uint dataLength = 0;
+                if (dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+                    dataLength = length - sizeof(ushort);
+                else
+                    dataLength = length - sizeof(uint);
                 // read in the type descriptor map
-                typeDescriptors = TypeReaders.GetTypeDescriptorMap(reader, dataLength);
+                typeDescriptors = TypeReader.GetTypeDescriptorMap(reader, dataLength);
                 // continue reading the data
-                return ReadChunk(reader, typeDescriptors);
+                return ReadChunk(reader, typeDescriptors, dataSettings);
             }
             else
             {
@@ -105,7 +121,7 @@ namespace AnySerializer
                     case TypeId.IDictionary:
                     case TypeId.IEnumerable:
                     case TypeId.Object:
-                        isChunkValid = ReadChunk(reader, typeDescriptors);
+                        isChunkValid = ReadChunk(reader, typeDescriptors, dataSettings);
                         break;
                 }
                 if (!isChunkValid)
@@ -114,12 +130,12 @@ namespace AnySerializer
                 if(reader.BaseStream.Position - lengthStartPosition - sizeof(ushort) == 0)
                 {
                     // it's a value type, read the full data
-                    var data = reader.ReadBytes(length - Constants.LengthHeaderSize);
+                    var data = reader.ReadBytes((int)length - Constants.LengthHeaderSize);
                 }
                 else if(reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     // read another chunk
-                    isChunkValid = ReadChunk(reader, typeDescriptors);
+                    isChunkValid = ReadChunk(reader, typeDescriptors, dataSettings);
                     if (!isChunkValid)
                         return false;
                 }

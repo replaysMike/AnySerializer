@@ -17,7 +17,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
+            var expectedSize = Constants.DataSettingsSize + Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Length *
                 (
                     Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
@@ -35,7 +35,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
+            var expectedSize = Constants.DataSettingsSize + Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Count *
                 (
                     Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
@@ -58,7 +58,7 @@ namespace AnySerializer.Tests
 
             Assert.NotNull(bytes);
             // should be equal to the size header + serialized object size
-            var expectedSize = Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
+            var expectedSize = Constants.DataSettingsSize + Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
                 (test.Count *
                 (
                     (Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*keysize*/

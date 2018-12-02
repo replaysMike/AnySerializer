@@ -39,7 +39,7 @@ namespace AnySerializer
             {
                 using (var reader = new BinaryReader(stream))
                 {
-                    var obj = TypeReaders.Read(reader, typeof(T).GetExtendedType(), maxDepth, options, ignoreAttributes, typeRegistry);
+                    var obj = TypeReader.Read(reader, typeof(T).GetExtendedType(), maxDepth, options, ignoreAttributes, typeRegistry);
                     return (T)obj;
                 }
             }

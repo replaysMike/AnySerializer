@@ -1,8 +1,11 @@
-﻿using System;
+﻿using LZ4;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using TypeSupport;
+using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
@@ -52,14 +55,44 @@ namespace AnySerializer
             {
                 using (var writer = new BinaryWriter(stream))
                 {
-                    typeDescriptors = TypeWriters.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes);
+                    typeDescriptors = TypeWriter.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes);
                 }
                 dataBytes = stream.ToArray();
+                
             }
 
             if(typeDescriptors != null)
                 dataBytes = BuildTypeDescriptorMap(dataBytes, typeDescriptors);
 
+            if (options.BitwiseHasFlag(SerializerOptions.Compress))
+            {
+                // enable data compression for strings
+                dataBytes = CompressData(dataBytes);
+            }
+
+            return dataBytes;
+        }
+
+        private byte[] CompressData(byte[] dataBytes)
+        {
+            var settingsByte = dataBytes[0];
+            var dataBytesWithoutSettingsByte = new byte[dataBytes.Length - 1];
+            Array.Copy(dataBytes, 1, dataBytesWithoutSettingsByte, 0, dataBytes.Length - 1);
+            using (var compressedStream = new MemoryStream())
+            {
+                using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Compress))
+                {
+                    using (var compressedWriter = new StreamWriter(lz4Stream))
+                    {
+                        compressedWriter.Write(Convert.ToBase64String(dataBytesWithoutSettingsByte));
+                    }
+                }
+                var compressedArray = compressedStream.ToArray();
+                var compressedArrayWithSettingsByte = new byte[compressedArray.Length + 1];
+                compressedArrayWithSettingsByte[0] = settingsByte;
+                Array.Copy(compressedArray, 0, compressedArrayWithSettingsByte, 1, compressedArray.Length);
+                dataBytes = compressedArrayWithSettingsByte;
+            }
             return dataBytes;
         }
 
@@ -100,10 +133,12 @@ namespace AnySerializer
 
             // prepend the type descriptors
             byte[] newDataBytes = new byte[dataBytes.Length + typeDescriptorBytes.Length];
-            // copy the type descriptors to the front of dataBytes
-            Array.Copy(typeDescriptorBytes, 0, newDataBytes, 0, typeDescriptorBytes.Length);
-            // append the dataBytes
-            Array.Copy(dataBytes, 0, newDataBytes, typeDescriptorBytes.Length, dataBytes.Length);
+            // copy dataSettings to the front
+            newDataBytes[0] = dataBytes[0];
+            // copy the type descriptors to the front of dataBytes + 1 (dataSettings is byte-0)
+            Array.Copy(typeDescriptorBytes, 0, newDataBytes, 1, typeDescriptorBytes.Length);
+            // append the dataBytes without dataSettings at byte-0
+            Array.Copy(dataBytes, 1, newDataBytes, typeDescriptorBytes.Length + 1, dataBytes.Length - 1);
             return newDataBytes;
         }
     }

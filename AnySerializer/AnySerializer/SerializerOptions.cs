@@ -22,5 +22,15 @@ namespace AnySerializer
         /// Specify if you want to embed types
         /// </summary>
         EmbedTypes = 2,
+
+        /// <summary>
+        /// Specify to use compact data mode
+        /// </summary>
+        Compact = 4,
+
+        /// <summary>
+        /// Specify to compress the binary serialized data
+        /// </summary>
+        Compress = 8,
     }
 }

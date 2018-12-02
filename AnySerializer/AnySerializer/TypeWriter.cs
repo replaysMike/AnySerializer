@@ -1,4 +1,5 @@
 ﻿using AnySerializer.CustomSerializers;
+using LZ4;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,8 +12,16 @@ using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
 {
-    internal class TypeWriters
+    internal class TypeWriter
     {
+        private int _maxDepth;
+        private SerializerDataSettings _dataSettings;
+        private SerializerOptions _options;
+        private TypeDescriptors _typeDescriptors;
+        private ObjectReferenceTracker _referenceTracker;
+        private IDictionary<Type, Lazy<ICustomSerializer>> _customSerializers;
+        private ICollection<Type> _ignoreAttributes;
+
         /// <summary>
         /// Write the parent object, and recursively process it's children
         /// </summary>
@@ -25,26 +34,44 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes)
         {
-            var customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
-            {
-                { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
-                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) }
-            };
             var currentDepth = 0;
 
             TypeDescriptors typeDescriptors = null;
             if (options.BitwiseHasFlag(SerializerOptions.EmbedTypes))
                 typeDescriptors = new TypeDescriptors();
 
-            var referenceTracker = new ObjectReferenceTracker();
+            var dataSettings = SerializerDataSettings.None;
+            if (typeDescriptors != null)
+                dataSettings |= SerializerDataSettings.TypeMap;
+            if(options.BitwiseHasFlag(SerializerOptions.Compact))
+                dataSettings |= SerializerDataSettings.Compact;
+            if (options.BitwiseHasFlag(SerializerOptions.Compress))
+                dataSettings |= SerializerDataSettings.Compress;
+            // write the serializer byte 0, data settings
+            writer.Write((byte)dataSettings);
 
-            var typeWriter = new TypeWriters();
-            var length = typeWriter.WriteObject(writer, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, string.Empty, ignoreAttributes, typeDescriptors);
+            var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors);
+            var length = typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty);
 
             return typeDescriptors;
         }
 
-        internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        public TypeWriter(int maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        {
+            _maxDepth = maxDepth;
+            _dataSettings = dataSettings;
+            _options = options;
+            _ignoreAttributes = ignoreAttributes;
+            _typeDescriptors = typeDescriptors;
+            _referenceTracker = new ObjectReferenceTracker();
+            _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
+            {
+                { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
+                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) }
+            };
+        }
+
+        internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             TypeId objectTypeId = TypeId.None;
             try
@@ -61,7 +88,7 @@ namespace AnySerializer
             if (obj == null)
                 objectTypeIdByte |= (byte)TypeId.NullValue;
             // if the object type is an interface, indicate so in the type mask
-            var isTypeMapped = typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous);
+            var isTypeMapped = _typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous);
             if (isTypeMapped)
                 objectTypeIdByte |= (byte)TypeId.TypeMapped;
             var isValueType = TypeUtil.IsValueType(objectTypeId);
@@ -73,13 +100,16 @@ namespace AnySerializer
             var lengthStartPosition = writer.BaseStream.Position;
 
             // make room for the length prefix and object reference id
-            writer.Seek(Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
+            if(_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+                writer.Seek(Constants.CompactLengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
+            else
+                writer.Seek(Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
 
             // write the optional type descriptor id - only interfaces can store type descriptors
             var containsTypeDescriptorId = false;
             if (isTypeMapped)
             {
-                var typeId = typeDescriptors.AddKnownType(typeSupport);
+                var typeId = _typeDescriptors.AddKnownType(typeSupport);
                 writer.Write(typeId);
                 containsTypeDescriptorId = true;
             }
@@ -88,49 +118,58 @@ namespace AnySerializer
             // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
             ushort objectReferenceId = 0;
             var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
-            var alreadyMapped = referenceTracker.ContainsHashcode(hashCode);
+            var alreadyMapped = _referenceTracker.ContainsHashcode(hashCode);
             // if we already wrote this object, we want to write a reference to it in the data
             if (alreadyMapped)
-                objectReferenceId = referenceTracker.GetObjectReferenceId(hashCode);
+                objectReferenceId = _referenceTracker.GetObjectReferenceId(hashCode);
             if (hashCode != 0 && !alreadyMapped)
             {
                 // ensure we can refer back to the reference for this object
-                objectReferenceId = referenceTracker.AddObject(obj, hashCode);
+                objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
 
                 switch (objectTypeId)
                 {
                     case TypeId.Object:
-                        WriteObjectType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                        WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Array:
-                        WriteArrayType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                        WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.IDictionary:
-                        WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                        WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.IEnumerable:
-                        WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                        WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Tuple:
-                        WriteTupleType(writer, lengthStartPosition, obj, typeSupport, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                        WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Enum:
-                        WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)), customSerializers, options);
+                        WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
                         break;
                     default:
-                        WriteValueType(writer, lengthStartPosition, obj, typeSupport, customSerializers, options);
+                        WriteValueType(writer, lengthStartPosition, obj, typeSupport);
                         break;
                 }
             }
 
             var currentPosition = writer.BaseStream.Position;
             // write the length header at the start of this object, excluding the objectReferenceId at the end
-            var dataLength = writer.BaseStream.Position - lengthStartPosition - sizeof(ushort);
+            var dataLength = (int)(writer.BaseStream.Position - lengthStartPosition - sizeof(ushort));
             // if we wrote a typeDescriptorId, that doesn't apply to the dataLength
             if (containsTypeDescriptorId)
-                dataLength -= sizeof(ushort);
+            {
+                dataLength -= Constants.ObjectTypeDescriptorId;
+            }
             writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);
-            writer.Write((int)dataLength);
+            if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+            {
+                if (dataLength > ushort.MaxValue)
+                    throw new ExceedsMaxSizeException($"The object type '{typeSupport.Type}' serializes to a data size '{dataLength}' which is greater than supported for Compact mode (max: '{ushort.MaxValue}')");
+                writer.Write((ushort)dataLength);
+            }
+            else
+                writer.Write((uint)dataLength);
             // write the object reference Id from the object tree.
             // this is used so we don't have to serialize objects already in the data, we can just reference it's id
             writer.Write(objectReferenceId);
@@ -140,7 +179,7 @@ namespace AnySerializer
             return dataLength;
         }
 
-        internal void WriteValueType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, SerializerOptions options)
+        internal void WriteValueType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport)
         {
             var @switch = new Dictionary<Type, Action> {
                         { typeof(bool), () => writer.Write((bool)obj) },
@@ -157,14 +196,13 @@ namespace AnySerializer
                         { typeof(decimal), () => writer.Write((decimal)obj) },
                         { typeof(Enum), () =>
                             {
-                            var bytes = customSerializers[typeof(Enum)].Value.Serialize((Enum)obj);
+                            var bytes = _customSerializers[typeof(Enum)].Value.Serialize((Enum)obj);
                             writer.Write(bytes);
                             }
                         },
                         { typeof(string), () =>
                             {
-                                if(obj != null)
-                                    writer.Write((string)obj);
+                                writer.Write((string)obj);
                             }
                         },
                         { typeof(char), () => writer.Write((char)obj) },
@@ -173,7 +211,7 @@ namespace AnySerializer
                         { typeof(TimeSpan), () => writer.Write(((TimeSpan)obj).Ticks) },
                         { typeof(Point), () =>
                             {
-                            var bytes = customSerializers[typeof(Point)].Value.Serialize((Point)obj);
+                            var bytes = _customSerializers[typeof(Point)].Value.Serialize((Point)obj);
                             writer.Write(bytes);
                             }
                         },
@@ -184,7 +222,7 @@ namespace AnySerializer
                 @switch[typeSupport.NullableBaseType]();
         }
 
-        internal void WriteArrayType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal void WriteArrayType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
             var array = (IEnumerable)obj;
@@ -195,11 +233,11 @@ namespace AnySerializer
             {
                 if (item != null && elementConcreteExtendedType == null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
-                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path);
             }
         }
 
-        internal void WriteEnumerableType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal void WriteEnumerableType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
             var enumerable = (IEnumerable)obj;
@@ -210,11 +248,11 @@ namespace AnySerializer
             {
                 if (item != null && elementConcreteExtendedType == null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
-                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path);
             }
         }
 
-        internal void WriteTupleType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal void WriteTupleType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element, treat a tuple as a list of objects
             var enumerable = new List<object>();
@@ -227,12 +265,12 @@ namespace AnySerializer
             var index = 0;
             foreach (var item in enumerable)
             {
-                WriteObject(writer, item, valueExtendedTypes[index], customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item, valueExtendedTypes[index], currentDepth, path);
                 index++;
             }
         }
 
-        internal void WriteDictionaryType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal void WriteDictionaryType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
             var dictionary = (IDictionary)obj;
@@ -243,15 +281,15 @@ namespace AnySerializer
             foreach (DictionaryEntry item in dictionary)
             {
                 // write the key
-                WriteObject(writer, item.Key, keyExtendedType, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item.Key, keyExtendedType, currentDepth, path);
                 // write the value
                 if (item.Value != null && valueConcreteExtendedType == null)
                     valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
-                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
             }
         }
 
-        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, IDictionary<Type, Lazy<ICustomSerializer>> customSerializers, int currentDepth, int maxDepth, SerializerOptions options, ObjectReferenceTracker referenceTracker, string path, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
             var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
@@ -266,21 +304,21 @@ namespace AnySerializer
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
 #if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
+                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)))
 #else
-                if (field.CustomAttributes.Any(x => ignoreAttributes.Contains(x.Constructor.DeclaringType)))
+                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)))
 #endif
                     continue;
                 if (fieldExtendedType.IsDelegate)
                     continue;
 
 #if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => ignoreAttributes.Contains(x.AttributeType)))
+                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)))
 #else
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => ignoreAttributes.Contains(x.Constructor.DeclaringType)))
+                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)))
 #endif
                     continue;
-                WriteObject(writer, fieldValue, fieldExtendedType, customSerializers, currentDepth, maxDepth, options, referenceTracker, path, ignoreAttributes, typeDescriptors);
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
             }
         }
     }

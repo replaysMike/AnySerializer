@@ -7,7 +7,7 @@ namespace AnySerializer.CustomSerializers
     {
         public short DataSize => sizeof(long);
 
-        public object Deserialize(byte[] bytes, int length)
+        public object Deserialize(byte[] bytes, uint length)
         {
             switch (length)
             {
@@ -46,7 +46,7 @@ namespace AnySerializer.CustomSerializers
             return BitConverter.GetBytes((ulong)value);
         }
 
-        object ICustomSerializer.Deserialize(byte[] bytes, int length)
+        object ICustomSerializer.Deserialize(byte[] bytes, uint length)
         {
             return Deserialize(bytes, length);
         }

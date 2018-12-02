@@ -16,7 +16,7 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
         /// <returns></returns>
-        new T Deserialize(byte[] bytes, int length);
+        new T Deserialize(byte[] bytes, uint length);
     }
 
     public interface ICustomSerializer
@@ -39,6 +39,6 @@
         /// <param name="bytes"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        object Deserialize(byte[] bytes, int length);
+        object Deserialize(byte[] bytes, uint length);
     }
 }

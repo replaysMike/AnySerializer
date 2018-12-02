@@ -7,7 +7,7 @@ namespace AnySerializer.CustomSerializers
     {
         public short DataSize => sizeof(long);
 
-        public Point Deserialize(byte[] bytes, int length)
+        public Point Deserialize(byte[] bytes, uint length)
         {
             var res = BitConverter.ToInt64(bytes, 0);
             var y = (int)(res & uint.MaxValue);
@@ -29,7 +29,7 @@ namespace AnySerializer.CustomSerializers
             return Serialize((Point)type);
         }
 
-        object ICustomSerializer.Deserialize(byte[] bytes, int length)
+        object ICustomSerializer.Deserialize(byte[] bytes, uint length)
         {
             return Deserialize(bytes, length);
         }
