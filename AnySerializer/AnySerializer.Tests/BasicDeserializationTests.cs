@@ -306,6 +306,17 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, deserializedTest);
         }
+
+        [Test]
+        public void ShouldDeserialize_ValueTupleNamed()
+        {
+            var test = (id: 10, name: "test");
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<(int, string)>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
 #endif
     }
 }

@@ -14,7 +14,7 @@ namespace AnySerializer.Tests
             var originalObject = new { Id = 1, Name = "John Doe" };
 
             // serialize to binary data
-            var bytes = originalObject.Serialize(SerializerOptions.EmbedTypes);
+            var bytes = originalObject.Serialize();
 
             // restore the object from binary data
             var restoredObject = bytes.Deserialize(originalObject.GetType());
@@ -29,7 +29,7 @@ namespace AnySerializer.Tests
             var originalObject = new AnonymousTypeObject(new { Id = 1, Name = "John Doe" });
 
             // serialize to binary data
-            var bytes = originalObject.Serialize(SerializerOptions.EmbedTypes);
+            var bytes = originalObject.Serialize();
 
             // restore the object from binary data
             var restoredObject = bytes.Deserialize<AnonymousTypeObject>();
