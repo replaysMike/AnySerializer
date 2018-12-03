@@ -137,6 +137,8 @@ var restoredObject = bytes.Deserialize<SomeComplexTypeWithDeepStructure>();
 - [x] Embedded type descriptors
 - [x] Data validator
 - [x] Custom collections
+- [x] Optional compact mode
+- [x] Compression support
 - [ ] High performance testing and optimization
 
 ### Other applications
