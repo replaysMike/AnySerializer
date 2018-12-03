@@ -298,11 +298,17 @@ namespace AnySerializer
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.Name}";
-                if (field.Name == "_tablePlayers")
-                    System.Diagnostics.Debugger.Break();
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
+                ExtendedType concreteFieldExtendedType = null;
+                if (fieldExtendedType.ConcreteType != null && fieldExtendedType.Type != fieldExtendedType.ConcreteType)
+                    concreteFieldExtendedType = new ExtendedType(fieldExtendedType.ConcreteType);
+
+                // a special condition for writing anonymous types
+                if (concreteFieldExtendedType?.IsAnonymous == true)
+                    fieldExtendedType = concreteFieldExtendedType;
+
 #if FEATURE_CUSTOM_ATTRIBUTES
                 if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)))
 #else

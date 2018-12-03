@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using TypeSupport;
 
 namespace AnySerializer
@@ -67,6 +68,19 @@ namespace AnySerializer
         public static T Deserialize<T>(Stream stream, SerializerOptions options)
         {
             return Extensions.SerializerExtensions.Deserialize<T>(stream, options);
+        }
+
+        /// <summary>
+        /// Deserialize an object of type <typeparamref name="T"/>
+        /// </summary>
+        /// <param name="type">The type to deserialize</param>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serializer options</param>
+        /// <param name="typeMaps">A list of type mappings</param>
+        /// <returns>Deserlized <typeparamref name="T"/></returns>
+        public static object Deserialize(Type type, byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        {
+            return Extensions.SerializerExtensions.Deserialize(bytes, type, options, typeMaps);
         }
 
         /// <summary>
