@@ -123,7 +123,7 @@ var bytes = originalObject.Serialize();
 var restoredObject = bytes.Deserialize<SomeComplexTypeWithDeepStructure>();
 ```
 
-### Scenarios supported
+### Capabilities
 
 - [x] All basic types, enums, generics, collections
 - [x] Read-only types
