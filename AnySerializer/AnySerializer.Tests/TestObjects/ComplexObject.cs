@@ -12,6 +12,10 @@ namespace AnySerializer.Tests.TestObjects
         public ICollection<int> NumbersList { get; set; }
         public IDictionary<int, CustomerObject> Customers { get; set; }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
 
         public override bool Equals(object obj)
         {

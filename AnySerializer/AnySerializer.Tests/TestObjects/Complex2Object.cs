@@ -17,6 +17,11 @@ namespace AnySerializer.Tests.TestObjects
             Description = description;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (Complex2Object)obj;

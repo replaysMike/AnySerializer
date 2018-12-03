@@ -12,6 +12,10 @@ namespace AnySerializer.Tests.TestObjects
         // todo: this shouldn't be needed
         public ConcreteInterfaceObject() { }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
         public override bool Equals(object obj)
         {
             var basicObject = (ConcreteInterfaceObject)obj;

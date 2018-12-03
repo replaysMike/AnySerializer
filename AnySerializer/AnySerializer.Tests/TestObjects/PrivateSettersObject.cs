@@ -10,6 +10,11 @@ namespace AnySerializer.Tests.TestObjects
             Id = id;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (PrivateSettersObject)obj;

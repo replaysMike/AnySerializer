@@ -11,6 +11,11 @@ namespace AnySerializer.Tests.TestObjects
             _id = id;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (ReadOnlyFieldsObject)obj;

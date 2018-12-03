@@ -9,6 +9,11 @@ namespace AnySerializer.Tests.TestObjects
         public int Z;
         public IgnoreConstantsObject() { }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (IgnoreConstantsObject)obj;

@@ -48,6 +48,11 @@ namespace AnySerializer.Tests.TestObjects
             _z = z;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (CustomCollectionObject)obj;

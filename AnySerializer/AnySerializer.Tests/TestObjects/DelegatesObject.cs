@@ -14,6 +14,11 @@ namespace AnySerializer.Tests.TestObjects
             OnEvent = someDelegate;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (DelegatesEventsObject)obj;

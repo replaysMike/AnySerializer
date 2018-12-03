@@ -10,6 +10,11 @@ namespace AnySerializer.Tests.TestObjects
         public string Name { get; set; }
         public ICollection<CustomerPaymentRecord> CustomerPaymentRecords { get; set; }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (CustomerObject)obj;

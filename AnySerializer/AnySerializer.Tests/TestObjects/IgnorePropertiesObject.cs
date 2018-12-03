@@ -9,6 +9,10 @@ namespace AnySerializer.Tests.TestObjects
         [IgnoreDataMember]
         public string Name { get; set; }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
 
         public override bool Equals(object obj)
         {

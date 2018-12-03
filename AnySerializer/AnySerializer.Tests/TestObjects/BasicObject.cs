@@ -8,6 +8,11 @@ namespace AnySerializer.Tests.TestObjects
         public string Description { get; set; }
         public bool IsEnabled { get; set; }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (BasicObject)obj;

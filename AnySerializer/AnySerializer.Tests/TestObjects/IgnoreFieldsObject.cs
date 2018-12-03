@@ -21,6 +21,11 @@ namespace AnySerializer.Tests.TestObjects
             return _anInternalField;
         }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (IgnoreFieldsObject)obj;

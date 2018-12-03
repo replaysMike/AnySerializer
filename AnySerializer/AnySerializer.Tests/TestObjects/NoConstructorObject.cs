@@ -6,6 +6,11 @@ namespace AnySerializer.Tests.TestObjects
     {
         public int Id { get; set; }
 
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
         public override bool Equals(object obj)
         {
             var basicObject = (NoConstructorObject)obj;
