@@ -40,9 +40,15 @@ namespace AnySerializer
                          * the whole structure.
                          */
                         // read in byte 0, the data settings
+                        var dataReader = reader;
                         var dataSettings = (SerializerDataSettings)reader.ReadByte();
+
+                        // if it's a compressed data stream, decompress it first
+                        if (dataSettings.BitwiseHasFlag(SerializerDataSettings.Compress))
+                            dataReader = TypeReader.Decompress(dataReader);
+
                         // read in all chunks
-                        isValid = ReadChunk(reader, typeDescriptors, dataSettings);
+                        isValid = ReadChunk(dataReader, typeDescriptors, dataSettings);
                     }
                 }
             }
@@ -130,7 +136,11 @@ namespace AnySerializer
                 if(reader.BaseStream.Position - lengthStartPosition - sizeof(ushort) == 0)
                 {
                     // it's a value type, read the full data
-                    var data = reader.ReadBytes((int)length - Constants.LengthHeaderSize);
+                    byte[] data = null;
+                    if (dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+                        data = reader.ReadBytes((int)length - Constants.CompactLengthHeaderSize);
+                    else
+                        data = reader.ReadBytes((int)length - Constants.LengthHeaderSize);
                 }
                 else if(reader.BaseStream.Position < reader.BaseStream.Length)
                 {

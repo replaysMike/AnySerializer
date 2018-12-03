@@ -46,22 +46,8 @@ namespace AnySerializer
 
             if (dataSettings.BitwiseHasFlag(SerializerDataSettings.Compress))
             {
-                var compressedBytes = new byte[reader.BaseStream.Length - 1];
-                reader.Read(compressedBytes, 0, compressedBytes.Length);
-
                 // decompress the stream
-                using (var compressedStream = new MemoryStream(compressedBytes))
-                {
-                    using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Decompress))
-                    {
-                        using (var compressedReader = new StreamReader(lz4Stream))
-                        {
-                            var encodedString = compressedReader.ReadToEnd();
-                            var decodedBytes = Convert.FromBase64String(encodedString);
-                            dataReader = new BinaryReader(new MemoryStream(decodedBytes));
-                        }
-                    }
-                }
+                dataReader = Decompress(reader);
             }
 
             var typeReader = new TypeReader(dataSettings, options, maxDepth, ignoreAttributes, typeRegistry);
@@ -469,6 +455,29 @@ namespace AnySerializer
                 typeDescriptors.Deserialize(bytes);
             }
             return typeDescriptors;
+        }
+
+        internal static BinaryReader Decompress(BinaryReader reader)
+        {
+            var dataReader = reader;
+            // read in all of the compressed data, minus the SerializerDataSettings byte-0 value
+            var compressedBytes = new byte[reader.BaseStream.Length - 1];
+            reader.Read(compressedBytes, 0, compressedBytes.Length);
+
+            // decompress the stream
+            using (var compressedStream = new MemoryStream(compressedBytes))
+            {
+                using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Decompress))
+                {
+                    using (var compressedReader = new StreamReader(lz4Stream))
+                    {
+                        var encodedString = compressedReader.ReadToEnd();
+                        var decodedBytes = Convert.FromBase64String(encodedString);
+                        dataReader = new BinaryReader(new MemoryStream(decodedBytes));
+                    }
+                }
+            }
+            return dataReader;
         }
     }
 }

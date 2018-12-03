@@ -25,6 +25,38 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldValidate_Compact_BasicObject()
+        {
+            var test = new BasicObject()
+            {
+                Id = 1,
+                IsEnabled = true,
+                Description = "Test",
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test, SerializerOptions.Compact);
+            var isValid = provider.Validate(bytes);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [Test]
+        public void ShouldValidate_Compressed_BasicObject()
+        {
+            var test = new BasicObject()
+            {
+                Id = 1,
+                IsEnabled = true,
+                Description = "Test",
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test, SerializerOptions.Compress);
+            var isValid = provider.Validate(bytes);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [Test]
         public void ShouldValidate_BasicObjectWithEmptyEmbeddedTypeDescriptors()
         {
             var test = new BasicObject()
