@@ -30,7 +30,7 @@ namespace AnySerializer
                          * 
                          * Chunk Format 
                          * [ChunkType]              1 byte (byte)
-                         * [ChunkLength]            4 bytes (Int32)
+                         * [ChunkLength]            4 bytes (UInt32) or 2 bytes (UInt16)
                          * [ObjectReferenceId]      2 bytes (UInt16)
                          * [OptionalTypeDescriptor] 2 bytes (UInt16)
                          * [Data]           [ChunkLength-Int32] bytes
