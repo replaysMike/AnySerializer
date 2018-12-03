@@ -4,13 +4,13 @@
 [![nuget](https://img.shields.io/nuget/dt/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
 [![Build status](https://ci.appveyor.com/api/projects/status/gfwjabg1pta7em94?svg=true)](https://ci.appveyor.com/project/MichaelBrown/anyserializer)
 
-A CSharp library that can binary serialize any object quickly and easily. No attributes/decoration required!
+A CSharp binary serialization library that can serialize any object quickly and easily. No attributes/decoration required!
 
 That's right, no need for `[Serializable]` or any other custom attributes on your classes!
 
 ## Description
 
-AnySerializer was built for software applications that make manual serialization difficult, or time consuming to decorate and design correctly. Other libraries require custom attributes to define serialization contracts, or fail at more complicated scenarios that involve interfaces, delegates and events defined. That's where AnySerializer shines! It literally is an anything in, anything out binary serializer.
+AnySerializer was built for software applications that make manual serialization difficult, or time consuming to decorate and design correctly. Other libraries require custom attributes to define serialization contracts, or fail entirely at more complicated scenarios. That's where AnySerializer shines! It literally is an anything in, anything out binary serializer.
 
 ## Installation
 Install AnySerializer from the Package Manager Console:
