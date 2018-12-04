@@ -199,7 +199,11 @@ namespace AnySerializer
             try
             {
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
+                {
                     newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
+                    if(newObj != null)
+                        typeSupport = newObj.GetType().GetExtendedType();
+                }
                 else
                     newObj = objectFactory.CreateEmptyObject(typeSupport.Type, _typeRegistry);
             }
@@ -319,9 +323,11 @@ namespace AnySerializer
             uint i = 0;
             uint dataLength = 0;
             uint headerLength = 0;
-            var genericType = typeSupport.Type.GetGenericArguments().First();
+
+            var genericType = typeSupport.Type.GetGenericArguments().First();           
             var genericExtendedType = new ExtendedType(genericType);
             var addMethod = typeSupport.Type.GetMethod("Add");
+            
             while (i < length)
             {
                 var element = ReadObject(reader, genericExtendedType, currentDepth, path, ref dataLength, ref headerLength);
