@@ -29,19 +29,9 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="typeRegistry">Custom type registry</param>
         /// <returns></returns>
-        internal T InspectAndDeserialize<T>(byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
+        internal T InspectAndDeserialize<T>(byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
-            if (sourceBytes == null)
-                return default(T);
-
-            using (var stream = new MemoryStream(sourceBytes))
-            {
-                using (var reader = new BinaryReader(stream))
-                {
-                    var obj = TypeReader.Read(reader, typeof(T).GetExtendedType(), maxDepth, options, ignoreAttributes, typeRegistry);
-                    return (T)obj;
-                }
-            }
+            return (T)InspectAndDeserialize(typeof(T), sourceBytes, maxDepth, options, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths);
         }
 
         /// <summary>
@@ -55,7 +45,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="typeRegistry">Custom type registry</param>
         /// <returns></returns>
-        internal object InspectAndDeserialize(Type type, byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
+        internal object InspectAndDeserialize(Type type, byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (sourceBytes == null)
                 return null;
@@ -64,7 +54,7 @@ namespace AnySerializer
             {
                 using (var reader = new BinaryReader(stream))
                 {
-                    var obj = TypeReader.Read(reader, type.GetExtendedType(), maxDepth, options, ignoreAttributes, typeRegistry);
+                    var obj = TypeReader.Read(reader, type.GetExtendedType(), maxDepth, options, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths);
                     return obj;
                 }
             }

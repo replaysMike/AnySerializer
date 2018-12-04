@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using TypeSupport;
 using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
@@ -34,7 +33,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        internal byte[] InspectAndSerialize(object sourceObject, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes)
+        internal byte[] InspectAndSerialize(object sourceObject, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (sourceObject == null)
                 return null;
@@ -55,7 +54,7 @@ namespace AnySerializer
             {
                 using (var writer = new BinaryWriter(stream))
                 {
-                    typeDescriptors = TypeWriter.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes);
+                    typeDescriptors = TypeWriter.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes, ignorePropertiesOrPaths);
                 }
                 dataBytes = stream.ToArray();
                 

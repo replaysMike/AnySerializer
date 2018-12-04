@@ -1,5 +1,4 @@
 ﻿using AnySerializer.CustomSerializers;
-using LZ4;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,15 +11,9 @@ using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
 {
-    internal class TypeWriter
+    internal class TypeWriter : TypeBase
     {
-        private int _maxDepth;
-        private SerializerDataSettings _dataSettings;
-        private SerializerOptions _options;
-        private TypeDescriptors _typeDescriptors;
         private ObjectReferenceTracker _referenceTracker;
-        private IDictionary<Type, Lazy<ICustomSerializer>> _customSerializers;
-        private ICollection<Type> _ignoreAttributes;
 
         /// <summary>
         /// Write the parent object, and recursively process it's children
@@ -32,7 +25,7 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
-        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes)
+        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
 
@@ -50,18 +43,19 @@ namespace AnySerializer
             // write the serializer byte 0, data settings
             writer.Write((byte)dataSettings);
 
-            var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors);
+            var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors, ignorePropertiesOrPaths);
             var length = typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty);
 
             return typeDescriptors;
         }
 
-        public TypeWriter(int maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<Type> ignoreAttributes, TypeDescriptors typeDescriptors)
+        public TypeWriter(int maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<object> ignoreAttributes, TypeDescriptors typeDescriptors, ICollection<string> ignorePropertiesOrPaths = null)
         {
             _maxDepth = maxDepth;
             _dataSettings = dataSettings;
             _options = options;
             _ignoreAttributes = ignoreAttributes;
+            _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
             _typeDescriptors = typeDescriptors;
             _referenceTracker = new ObjectReferenceTracker();
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
@@ -309,21 +303,16 @@ namespace AnySerializer
                 if (concreteFieldExtendedType?.IsAnonymous == true)
                     fieldExtendedType = concreteFieldExtendedType;
 
-#if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)))
-#else
-                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)))
-#endif
-                    continue;
                 if (fieldExtendedType.IsDelegate)
                     continue;
 
-#if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)))
-#else
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)))
-#endif
+                // check for ignore attributes
+                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
                     continue;
+                // also check the property for ignore, if this is a auto-backing property
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                    continue;
+
                 WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
             }
         }

@@ -12,16 +12,10 @@ using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
 {
-    internal class TypeReader
+    internal class TypeReader : TypeBase
     {
-        private SerializerOptions _options;
-        private SerializerDataSettings _dataSettings;
-        private readonly int _maxDepth;
         private Dictionary<ushort, object> _objectReferences;
-        private ICollection<Type> _ignoreAttributes;
-        private readonly TypeRegistry _typeRegistry;
-        private TypeDescriptors _typeDescriptors;
-        private readonly Dictionary<Type, Lazy<ICustomSerializer>> _customSerializers;
+        private TypeRegistry _typeRegistry;
 
         /// <summary>
         /// Read the parent object, and recursively process it's children
@@ -34,7 +28,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
         /// <returns></returns>
-        internal static object Read(BinaryReader reader, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry = null)
+        internal static object Read(BinaryReader reader, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
             uint dataLength = 0;
@@ -50,17 +44,18 @@ namespace AnySerializer
                 dataReader = Decompress(reader);
             }
 
-            var typeReader = new TypeReader(dataSettings, options, maxDepth, ignoreAttributes, typeRegistry);
+            var typeReader = new TypeReader(dataSettings, options, maxDepth, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths);
 
             return typeReader.ReadObject(dataReader, typeSupport, currentDepth, string.Empty, ref dataLength, ref headerLength);
         }
 
-        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, int maxDepth, ICollection<Type> ignoreAttributes, TypeRegistry typeRegistry)
+        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, int maxDepth, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
         {
             _dataSettings = dataSettings;
             _options = options;
             _maxDepth = maxDepth;
             _ignoreAttributes = ignoreAttributes;
+            _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
             _typeRegistry = typeRegistry;
             _objectReferences = new Dictionary<ushort, object>();
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
@@ -420,22 +415,17 @@ namespace AnySerializer
                 uint dataLength = 0;
                 uint headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);
-                // check for ignore attributes
-#if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)) && !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes))
-#else
-                if (field.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)) && !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes))
-#endif
-                    continue;
-                // also check the property for ignore attributes if this is an auto-backed property
-#if FEATURE_CUSTOM_ATTRIBUTES
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.AttributeType)) && !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes))
-#else
-                if (field.BackedProperty != null && field.BackedProperty.CustomAttributes.Any(x => _ignoreAttributes.Contains(x.Constructor.DeclaringType)) && !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes))
-#endif
-                    continue;
+
                 if (fieldExtendedType.IsDelegate)
                     continue;
+
+                // check for ignore attributes
+                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                    continue;
+                // also check the property for ignore, if this is a auto-backing property
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                    continue;
+
                 var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 newObj.SetFieldValue(field, fieldValue);
             }

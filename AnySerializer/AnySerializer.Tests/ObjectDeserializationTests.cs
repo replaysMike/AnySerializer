@@ -103,34 +103,6 @@ namespace AnySerializer.Tests
         }
 
         [Test]
-        public void ShouldDeserialize_ShouldIgnoreProperties()
-        {
-            var test = new IgnorePropertiesObject() { Id = 1, Name = "John Doe" };
-            var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test);
-            var testDeserialized = provider.Deserialize<IgnorePropertiesObject>(bytes);
-
-            Assert.AreNotEqual(test, testDeserialized);
-            Assert.AreEqual(test.Id, testDeserialized.Id);
-            Assert.IsNotNull(test.Name);
-            Assert.IsNull(testDeserialized.Name);
-        }
-
-        [Test]
-        public void ShouldDeserialize_ShouldIgnoreFields()
-        {
-            var test = new IgnoreFieldsObject(100) { Id = 1, Name = "John Doe" };
-            var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test);
-            var testDeserialized = provider.Deserialize<IgnoreFieldsObject>(bytes);
-
-            Assert.AreNotEqual(test, testDeserialized);
-            Assert.AreEqual(test.Id, testDeserialized.Id);
-            Assert.AreEqual(test.Name, testDeserialized.Name);
-            Assert.AreNotEqual(test.GetInternalField(), testDeserialized.GetInternalField());
-        }
-
-        [Test]
         public void ShouldDeserialize_DelegatesShouldNotBeSerialized()
         {
             var test = new DelegatesEventsObject(1, new DelegatesEventsObject.ADelegate(DelegateTarget));
