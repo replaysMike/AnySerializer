@@ -326,7 +326,13 @@ namespace AnySerializer
             var genericType = typeSupport.Type.GetGenericArguments().First();           
             var genericExtendedType = new ExtendedType(genericType);
             var addMethod = typeSupport.Type.GetMethod("Add");
-            
+            if(addMethod == null)
+                addMethod = typeSupport.Type.GetMethod("Push");
+            if (addMethod == null)
+                addMethod = typeSupport.Type.GetMethod("Enqueue");
+            if (addMethod == null)
+                throw new DataFormatException($"TypeReader does not know how to add items to this enumerable: {typeSupport.Type}");
+
             while (i < length)
             {
                 var element = ReadObject(reader, genericExtendedType, currentDepth, path, ref dataLength, ref headerLength);

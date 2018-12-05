@@ -109,20 +109,5 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, deserializedTest);
         }
-
-        [Test]
-        public void ShouldDeserialize_ConcurrentDictionary()
-        {
-            var concurrencyLevel = 1; // 1 thread for testing
-            var dictionarySize = 2;
-            var test = new ConcurrentDictionary<int, string>(concurrencyLevel, dictionarySize);
-            test[0] = "Test";
-            test[1] = "Test 2";
-            var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test);
-            var deserializedTest = provider.Deserialize<ConcurrentDictionary<int, string>>(bytes);
-
-            Assert.AreEqual(test, deserializedTest);
-        }
     }
 }

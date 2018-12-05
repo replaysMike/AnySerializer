@@ -1,6 +1,7 @@
 ﻿using AnySerializer.CustomSerializers;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -238,6 +239,18 @@ namespace AnySerializer
         {
             // write each element
             var enumerable = (IEnumerable)obj;
+
+            // special case for stack types, write the data in reverse order
+            if (typeSupport.IsGeneric)
+            {
+                if (typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentBag<>)
+                    || typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentStack<>)
+                    || typeSupport.Type.GetGenericTypeDefinition() == typeof(Stack<>)
+                )
+                {
+                    enumerable = Enumerable.Reverse((IEnumerable<object>)obj);
+                }
+            }
 
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             ExtendedType elementConcreteExtendedType = null;
