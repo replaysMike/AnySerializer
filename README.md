@@ -1,5 +1,6 @@
 # AnySerializer
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/8001bb10a20c4456a98ed4dde145350a)](https://app.codacy.com/app/replaysMike/AnySerializer?utm_source=github.com&utm_medium=referral&utm_content=replaysMike/AnySerializer&utm_campaign=Badge_Grade_Dashboard)
 [![nuget](https://img.shields.io/nuget/v/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
 [![nuget](https://img.shields.io/nuget/dt/AnySerializer.svg)](https://www.nuget.org/packages/AnySerializer/)
 [![Build status](https://ci.appveyor.com/api/projects/status/gfwjabg1pta7em94?svg=true)](https://ci.appveyor.com/project/MichaelBrown/anyserializer)
