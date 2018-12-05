@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -201,6 +202,7 @@ namespace AnySerializer
                 || typeSupport.NullableBaseType.IsGenericType
                 && (
                     typeSupport.NullableBaseType.GetGenericTypeDefinition() == typeof(Dictionary<,>)
+                    || typeSupport.NullableBaseType.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>)
                     || typeSupport.NullableBaseType.GetGenericTypeDefinition() == typeof(IDictionary<,>)
                 ))
                 return TypeManagement.TypeMapping[typeof(IDictionary<,>)];

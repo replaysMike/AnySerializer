@@ -2,6 +2,7 @@
 using LZ4;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -386,8 +387,8 @@ namespace AnySerializer
             var valueExtendedType = typeSupports.Skip(1).First();
             Type[] typeArgs = { genericTypes[0], genericTypes[1] };
 
-            var listType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
-            var newDictionary = Activator.CreateInstance(listType) as IDictionary;
+            var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
+            var newDictionary = Activator.CreateInstance(dictionaryType) as IDictionary;
             newObj = newDictionary;
             var enumerator = (IDictionary)newObj;
 
@@ -400,6 +401,14 @@ namespace AnySerializer
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newDictionary.Add(key, value);
+            }
+
+            // special case for concurrent dictionaries
+            if(typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+            {
+                dictionaryType = typeof(ConcurrentDictionary<,>).MakeGenericType(typeArgs);
+                var newConcurrentDictionary = Activator.CreateInstance(dictionaryType, new object[] { newDictionary }) as IDictionary;
+                newObj = newConcurrentDictionary;
             }
 
             // return the value

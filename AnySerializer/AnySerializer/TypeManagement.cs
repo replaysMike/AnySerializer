@@ -30,6 +30,7 @@ namespace AnySerializer
                         { typeof(Point), TypeId.Point },
                         { typeof(Array), TypeId.Array },
                         { typeof(IEnumerable), TypeId.IEnumerable },
+                        { typeof(IDictionary), TypeId.IDictionary },
                         { typeof(IDictionary<,>), TypeId.IDictionary },
                         { typeof(Tuple<,>), TypeId.Tuple },
                         { typeof(KeyValuePair<,>), TypeId.KeyValuePair},
