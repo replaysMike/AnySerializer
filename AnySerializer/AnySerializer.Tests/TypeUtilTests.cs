@@ -15,6 +15,7 @@ namespace AnySerializer.Tests
         public void ShouldTypes_MapCorrectly()
         {
             Assert.AreEqual(new ExtendedType(typeof(Array)), TypeUtil.GetType(TypeId.Array));
+            Assert.AreEqual(new ExtendedType(typeof(Enum)), TypeUtil.GetType(TypeId.Enum));
             Assert.AreEqual(new ExtendedType(typeof(bool)), TypeUtil.GetType(TypeId.Bool));
             Assert.AreEqual(new ExtendedType(typeof(byte)), TypeUtil.GetType(TypeId.Byte));
             Assert.AreEqual(new ExtendedType(typeof(char)), TypeUtil.GetType(TypeId.Char));
