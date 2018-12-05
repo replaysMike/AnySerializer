@@ -97,5 +97,16 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, deserializedTest);
         }
+
+        [Test]
+        public void ShouldDeserialize_KeyValuePair()
+        {
+            var test = new KeyValuePair<int, string>(100, "Test");
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<KeyValuePair<int, string>>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
     }
 }

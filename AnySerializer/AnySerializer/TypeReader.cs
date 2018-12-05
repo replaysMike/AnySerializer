@@ -221,6 +221,9 @@ namespace AnySerializer
                 case TypeId.IEnumerable:
                     newObj = ReadEnumerableType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
                     break;
+                case TypeId.KeyValuePair:
+                    newObj = ReadKeyValueType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                    break;
                 case TypeId.Enum:
                     newObj = ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), currentDepth, path);
                     break;
@@ -400,6 +403,24 @@ namespace AnySerializer
             }
 
             // return the value
+            return newObj;
+        }
+
+        internal object ReadKeyValueType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
+        {
+            uint dataLength = 0;
+            uint headerLength = 0;
+            var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
+            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+            var keyExtendedType = typeSupports.First();
+            var valueExtendedType = typeSupports.Skip(1).First();
+
+            var key = ReadObject(reader, keyExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+            var value = ReadObject(reader, valueExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+            newObj.SetFieldValue("key", key);
+            newObj.SetFieldValue("value", value);
+
+            // return the kvp
             return newObj;
         }
 

@@ -32,6 +32,7 @@ namespace AnySerializer
                         { typeof(IEnumerable), TypeId.IEnumerable },
                         { typeof(IDictionary<,>), TypeId.IDictionary },
                         { typeof(Tuple<,>), TypeId.Tuple },
+                        { typeof(KeyValuePair<,>), TypeId.KeyValuePair},
                     };
 
         /// <summary>
@@ -61,6 +62,7 @@ namespace AnySerializer
             TimeSpan    = 18,
             Point       = 19,
             Tuple       = 20,
+            KeyValuePair= 21,
 
             // special bit to indicate a type map is stored for this type (concrete types for interfaces, anonymous types)
             TypeMapped = 32,

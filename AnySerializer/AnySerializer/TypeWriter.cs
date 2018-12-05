@@ -36,7 +36,7 @@ namespace AnySerializer
             var dataSettings = SerializerDataSettings.None;
             if (typeDescriptors != null)
                 dataSettings |= SerializerDataSettings.TypeMap;
-            if(options.BitwiseHasFlag(SerializerOptions.Compact))
+            if (options.BitwiseHasFlag(SerializerOptions.Compact))
                 dataSettings |= SerializerDataSettings.Compact;
             if (options.BitwiseHasFlag(SerializerOptions.Compress))
                 dataSettings |= SerializerDataSettings.Compress;
@@ -94,7 +94,7 @@ namespace AnySerializer
             var lengthStartPosition = writer.BaseStream.Position;
 
             // make room for the length prefix and object reference id
-            if(_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
+            if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
                 writer.Seek(Constants.CompactLengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
             else
                 writer.Seek(Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
@@ -134,6 +134,9 @@ namespace AnySerializer
                         break;
                     case TypeId.IEnumerable:
                         WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                        break;
+                    case TypeId.KeyValuePair:
+                        WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Tuple:
                         WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
@@ -281,6 +284,22 @@ namespace AnySerializer
                     valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
                 WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
             }
+        }
+
+        internal void WriteKeyValueType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        {
+            var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
+            var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
+            ExtendedType valueConcreteExtendedType = null;
+
+            var key = obj.GetPropertyValue("Key");
+            var value = obj.GetPropertyValue("Value");
+            // write the key
+            WriteObject(writer, key, keyExtendedType, currentDepth, path);
+            // write the value
+            if (value != null && valueConcreteExtendedType == null)
+                valueConcreteExtendedType = value.GetType().GetExtendedType();
+            WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
         }
 
         internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)

@@ -177,14 +177,24 @@ namespace AnySerializer
             if (typeSupport.IsEnum)
                 return TypeId.Enum;
 
-            if (TypeManagement.TypeMapping.ContainsKey(typeSupport.NullableBaseType))
-                return TypeManagement.TypeMapping[typeSupport.NullableBaseType];
+            if (typeSupport.IsGeneric && typeSupport.Type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                return TypeManagement.TypeMapping[typeof(KeyValuePair<,>)];
 
             // some other special circumstances
 
             if (typeSupport.IsTuple || typeSupport.IsValueTuple)
             {
                 return TypeManagement.TypeMapping[typeof(Tuple<,>)];
+            }
+
+            if (TypeManagement.TypeMapping.ContainsKey(typeSupport.NullableBaseType))
+            {
+                return TypeManagement.TypeMapping[typeSupport.NullableBaseType];
+            }
+
+            if (typeof(KeyValuePair<,>).IsAssignableFrom(typeSupport.NullableBaseType))
+            {
+                return TypeManagement.TypeMapping[typeof(KeyValuePair<,>)];
             }
 
             if (typeof(IDictionary<,>).IsAssignableFrom(typeSupport.NullableBaseType)
