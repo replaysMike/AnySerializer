@@ -21,7 +21,8 @@ namespace AnySerializer.Tests
             Assert.AreEqual(new ExtendedType(typeof(decimal)), TypeUtil.GetType(TypeId.Decimal));
             Assert.AreEqual(new ExtendedType(typeof(double)), TypeUtil.GetType(TypeId.Double));
             Assert.AreEqual(new ExtendedType(typeof(float)), TypeUtil.GetType(TypeId.Float));
-            Assert.AreEqual(new ExtendedType(typeof(IDictionary<,>)), TypeUtil.GetType(TypeId.IDictionary));
+            Assert.AreEqual(new ExtendedType(typeof(IDictionary)), TypeUtil.GetType(TypeId.IDictionary));
+            Assert.AreEqual(new ExtendedType(typeof(KeyValuePair<,>)), TypeUtil.GetType(TypeId.KeyValuePair));
             Assert.AreEqual(new ExtendedType(typeof(IEnumerable)), TypeUtil.GetType(TypeId.IEnumerable));
             Assert.AreEqual(new ExtendedType(typeof(int)), TypeUtil.GetType(TypeId.Int));
             Assert.AreEqual(new ExtendedType(typeof(long)), TypeUtil.GetType(TypeId.Long));
