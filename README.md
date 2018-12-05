@@ -139,6 +139,7 @@ var restoredObject = bytes.Deserialize<SomeComplexTypeWithDeepStructure>();
 - [x] Custom collections
 - [x] Optional compact mode
 - [x] Compression support
+- [x] Specialized collections (Queue, Stack, ConcurrentDictionary, ConcurrentQueue, ConcurrentStack, ConcurrentBag)
 - [ ] High performance testing and optimization
 
 ### Other applications
