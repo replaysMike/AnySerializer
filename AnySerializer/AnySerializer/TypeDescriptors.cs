@@ -33,14 +33,16 @@ namespace AnySerializer
         /// <param name="type"></param>
         public ushort AddKnownType(ExtendedType type)
         {
-            var existingType = Types.FirstOrDefault(x => x.FullName.Equals(type.Type.FullName));
+            var fullName = string.Empty;
+            if (type.ConcreteType != null && (type.IsInterface || type.IsAnonymous || type.Type == typeof(object)))
+                fullName = type.ConcreteType.AssemblyQualifiedName;
+            else
+                fullName = type.Type.AssemblyQualifiedName;
+            var existingType = Types.FirstOrDefault(x => x.FullName.Equals(fullName));
             if (existingType == null)
             {
                 // add a new type to the map
                 var typeId = _currentTypeId;
-                var fullName = type.Type.AssemblyQualifiedName;
-                if (type.IsInterface)
-                    fullName = type.ConcreteType.AssemblyQualifiedName;
                 Types.Add(new TypeDescriptor(typeId, fullName));
                 _currentTypeId++;
                 return typeId;

@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="lz4net" Version="1.0.15.93" />
-    <PackageReference Include="TypeSupport" Version="1.0.12" />
+    <PackageReference Include="TypeSupport" Version="1.0.44" />
   </ItemGroup>
 
 </Project>

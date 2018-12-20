@@ -185,11 +185,19 @@ namespace AnySerializer
             }
 
             // get the type support object for this object type
-            var objectExtendedType = TypeUtil.GetType(objectTypeId);
+            ExtendedType objectExtendedType = null;
+            if (objectTypeId != TypeId.Struct)
+            {
+                objectExtendedType = TypeUtil.GetType(objectTypeId);
 
-            // does this object map to something expected?
-            if (!TypeUtil.GetTypeId(objectExtendedType).Equals(objectTypeId))
-                throw new DataFormatException($"Serialized data wants to map {objectTypeId} to {typeSupport.Type.Name}, invalid data.");
+                // does this object map to something expected?
+                if (!TypeUtil.GetTypeId(objectExtendedType).Equals(objectTypeId))
+                    throw new DataFormatException($"Serialized data wants to map {objectTypeId} to {typeSupport.Type.Name}, invalid data.");
+            }
+            else
+            {
+
+            }
 
             object newObj = null;
             try
@@ -211,6 +219,7 @@ namespace AnySerializer
             switch (objectTypeId)
             {
                 case TypeId.Object:
+                case TypeId.Struct:
                     newObj = ReadObjectType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
                     break;
                 case TypeId.Array:
@@ -265,6 +274,7 @@ namespace AnySerializer
                     return result;
                 }},
                 { typeof(char), () => reader.ReadChar() },
+                { typeof(IntPtr), () => new IntPtr(reader.ReadInt64()) },
                 { typeof(Guid), () => new Guid(reader.ReadBytes(16)) },
                 { typeof(DateTime), () => DateTime.FromBinary(reader.ReadInt64()) },
                 { typeof(TimeSpan), () => TimeSpan.FromTicks(reader.ReadInt64()) },
@@ -447,7 +457,10 @@ namespace AnySerializer
             var rootPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.Name}";
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                if (path == ".XObject.parent")
+                    System.Diagnostics.Debugger.Break();
+
                 uint dataLength = 0;
                 uint headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);

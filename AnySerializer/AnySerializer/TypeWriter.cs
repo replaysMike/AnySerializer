@@ -71,7 +71,10 @@ namespace AnySerializer
             TypeId objectTypeId = TypeId.None;
             try
             {
-                objectTypeId = TypeUtil.GetTypeId(typeSupport);
+                if (typeSupport.IsStruct)
+                    objectTypeId = TypeId.Struct;
+                else
+                    objectTypeId = TypeUtil.GetTypeId(typeSupport);
             }
             catch (InvalidOperationException ex)
             {
@@ -83,7 +86,7 @@ namespace AnySerializer
             if (obj == null)
                 objectTypeIdByte |= (byte)TypeId.NullValue;
             // if the object type is an interface, indicate so in the type mask
-            var isTypeMapped = _typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous);
+            var isTypeMapped = _typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous || typeSupport.Type == typeof(object));
             if (isTypeMapped)
                 objectTypeIdByte |= (byte)TypeId.TypeMapped;
             var isValueType = TypeUtil.IsValueType(objectTypeId);
@@ -125,6 +128,7 @@ namespace AnySerializer
                 switch (objectTypeId)
                 {
                     case TypeId.Object:
+                    case TypeId.Struct:
                         WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Array:
@@ -204,6 +208,11 @@ namespace AnySerializer
                             }
                         },
                         { typeof(char), () => writer.Write((char)obj) },
+                        { typeof(IntPtr), () => 
+                            {
+                                writer.Write(((IntPtr)obj).ToInt64());
+                            }
+                        },
                         { typeof(Guid), () => writer.Write(((Guid)obj).ToByteArray()) },
                         { typeof(DateTime), () => writer.Write(((DateTime)obj).ToBinary()) },
                         { typeof(TimeSpan), () => writer.Write(((TimeSpan)obj).Ticks) },
@@ -323,7 +332,9 @@ namespace AnySerializer
             var rootPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.Name}";
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                if (path == ".XObject.parent")
+                    System.Diagnostics.Debugger.Break();
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);

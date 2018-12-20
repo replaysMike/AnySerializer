@@ -178,6 +178,9 @@ namespace AnySerializer
             if (typeSupport.IsEnum)
                 return TypeId.Enum;
 
+            if (typeSupport.IsStruct)
+                return TypeId.Struct;
+
             if (typeSupport.IsGeneric && typeSupport.Type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                 return TypeManagement.TypeMapping[typeof(KeyValuePair<,>)];
 
@@ -213,10 +216,13 @@ namespace AnySerializer
             if (typeof(IEnumerable).IsAssignableFrom(typeSupport.NullableBaseType))
                 return TypeManagement.TypeMapping[typeof(IEnumerable)];
 
+            if (typeSupport.Type == typeof(IntPtr))
+                return TypeManagement.TypeMapping[typeof(long)];
+
             if (typeSupport.IsValueType || typeSupport.IsPrimitive)
                 throw new InvalidOperationException($"Unsupported type: {typeSupport.NullableBaseType.FullName}");
 
-            return TypeManagement.TypeMapping[typeof(object)];
+            return TypeId.Object;
         }
 
         /// <summary>
@@ -228,7 +234,10 @@ namespace AnySerializer
         {
             if (!TypeManagement.TypeMapping.Values.Contains(type))
                 throw new InvalidOperationException($"Invalid type specified: {(int)type}");
-            var typeSupport = new ExtendedType(TypeManagement.TypeMapping.Where(x => x.Value == type).Select(x => x.Key).FirstOrDefault());
+            var typeSupport = new ExtendedType(TypeManagement.TypeMapping
+                .Where(x => x.Value == type)
+                .Select(x => x.Key)
+                .FirstOrDefault());
             return typeSupport;
         }
 

@@ -12,10 +12,9 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldSerialize_Xml()
         {
-            
             var test = XDocument.Load(@".\TestData\basic.xml");
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test);
+            var bytes = provider.Serialize(test, SerializerOptions.EmbedTypes);
             var deserializedTest = provider.Deserialize<XDocument>(bytes);
 
             Assert.AreEqual(test, deserializedTest);
