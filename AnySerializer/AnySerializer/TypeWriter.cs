@@ -68,6 +68,7 @@ namespace AnySerializer
 
         internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
+            var isTypeMapped = false;
             TypeId objectTypeId = TypeId.None;
             try
             {
@@ -81,14 +82,28 @@ namespace AnySerializer
                 throw new InvalidOperationException($"[{path}] {ex.Message}", ex);
             }
 
+            // if the object type is not a concrete type, indicate so in the type mask
+            isTypeMapped = _typeDescriptors != null && !typeSupport.IsConcreteType;
+            // also resolve the concrete type as it may require being typemapped
+            if (_typeDescriptors != null && typeSupport.ConcreteType != null && typeSupport.Type != typeSupport.ConcreteType && !typeSupport.IsConcreteType)
+            {
+                // a special condition for writing anonymous types and types without implementation or concrete type
+                typeSupport = new ExtendedType(typeSupport.ConcreteType);
+                isTypeMapped = true;
+                objectTypeId = TypeUtil.GetTypeId(typeSupport);
+            }
+
+            // if we couldn't resolve a concrete type, don't map it
+            if (isTypeMapped && typeSupport.Type == typeof(object))
+                isTypeMapped = false;
+
             byte objectTypeIdByte = (byte)objectTypeId;
             // if the object is null, indicate so in the type mask
             if (obj == null)
                 objectTypeIdByte |= (byte)TypeId.NullValue;
-            // if the object type is an interface, indicate so in the type mask
-            var isTypeMapped = _typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous || typeSupport.Type == typeof(object));
             if (isTypeMapped)
                 objectTypeIdByte |= (byte)TypeId.TypeMapped;
+            // indicate if it's a value type primitive
             var isValueType = TypeUtil.IsValueType(objectTypeId);
 
             // write the object type being serialized in position 0x00
@@ -333,18 +348,12 @@ namespace AnySerializer
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
-                if (path == ".XObject.parent")
+                //if (path == ".XObject.parent")
+                if(path == ".XContainer.content.XContainer.content.XNode.next.XContainer.content")
                     System.Diagnostics.Debugger.Break();
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
-                ExtendedType concreteFieldExtendedType = null;
-                if (fieldExtendedType.ConcreteType != null && fieldExtendedType.Type != fieldExtendedType.ConcreteType)
-                    concreteFieldExtendedType = new ExtendedType(fieldExtendedType.ConcreteType);
-
-                // a special condition for writing anonymous types
-                if (concreteFieldExtendedType?.IsAnonymous == true)
-                    fieldExtendedType = concreteFieldExtendedType;
 
                 if (fieldExtendedType.IsDelegate)
                     continue;

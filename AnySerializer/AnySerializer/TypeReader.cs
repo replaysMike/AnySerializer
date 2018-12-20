@@ -205,8 +205,7 @@ namespace AnySerializer
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
                 {
                     newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
-                    if(newObj != null)
-                        typeSupport = newObj.GetType().GetExtendedType();
+                    typeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
                 }
                 else
                     newObj = objectFactory.CreateEmptyObject(typeSupport.Type, _typeRegistry);

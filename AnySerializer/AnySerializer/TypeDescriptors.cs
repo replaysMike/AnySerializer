@@ -34,7 +34,7 @@ namespace AnySerializer
         public ushort AddKnownType(ExtendedType type)
         {
             var fullName = string.Empty;
-            if (type.ConcreteType != null && (type.IsInterface || type.IsAnonymous || type.Type == typeof(object)))
+            if (!type.IsConcreteType && type.ConcreteType != null)
                 fullName = type.ConcreteType.AssemblyQualifiedName;
             else
                 fullName = type.Type.AssemblyQualifiedName;
