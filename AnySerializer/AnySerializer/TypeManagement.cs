@@ -23,6 +23,7 @@ namespace AnySerializer
                         { typeof(string), TypeId.String },
                         { typeof(char), TypeId.Char },
                         { typeof(Enum), TypeId.Enum },
+                        { typeof(IntPtr), TypeId.IntPtr },
                         { typeof(object), TypeId.Object },
                         { typeof(Guid), TypeId.Guid },
                         { typeof(DateTime), TypeId.DateTime },
@@ -64,6 +65,8 @@ namespace AnySerializer
             Point       = 19,
             Tuple       = 20,
             KeyValuePair= 21,
+            Struct = 22,
+            IntPtr = 23,
 
             // special bit to indicate a type map is stored for this type (concrete types for interfaces, anonymous types)
             TypeMapped = 32,

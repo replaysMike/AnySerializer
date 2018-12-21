@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using TypeSupport;
 using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
@@ -62,12 +63,14 @@ namespace AnySerializer
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
             {
                 { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
-                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) }
+                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
+                { typeof(XDocument), new Lazy<ICustomSerializer>(() => new XDocumentSerializer()) },
             };
         }
 
         internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
+            var isTypeMapped = false;
             TypeId objectTypeId = TypeId.None;
             try
             {
@@ -78,14 +81,28 @@ namespace AnySerializer
                 throw new InvalidOperationException($"[{path}] {ex.Message}", ex);
             }
 
+            // if the object type is not a concrete type, indicate so in the type mask
+            isTypeMapped = _typeDescriptors != null && !typeSupport.IsConcreteType;
+            // also resolve the concrete type as it may require being typemapped
+            if (_typeDescriptors != null && typeSupport.ConcreteType != null && typeSupport.Type != typeSupport.ConcreteType && !typeSupport.IsConcreteType)
+            {
+                // a special condition for writing anonymous types and types without implementation or concrete type
+                typeSupport = new ExtendedType(typeSupport.ConcreteType);
+                isTypeMapped = true;
+                objectTypeId = TypeUtil.GetTypeId(typeSupport);
+            }
+
+            // if we couldn't resolve a concrete type, don't map it
+            if (isTypeMapped && typeSupport.Type == typeof(object))
+                isTypeMapped = false;
+
             byte objectTypeIdByte = (byte)objectTypeId;
             // if the object is null, indicate so in the type mask
             if (obj == null)
                 objectTypeIdByte |= (byte)TypeId.NullValue;
-            // if the object type is an interface, indicate so in the type mask
-            var isTypeMapped = _typeDescriptors != null && (typeSupport.IsInterface || typeSupport.IsAnonymous);
             if (isTypeMapped)
                 objectTypeIdByte |= (byte)TypeId.TypeMapped;
+            // indicate if it's a value type primitive
             var isValueType = TypeUtil.IsValueType(objectTypeId);
 
             // write the object type being serialized in position 0x00
@@ -122,32 +139,46 @@ namespace AnySerializer
                 // ensure we can refer back to the reference for this object
                 objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
 
-                switch (objectTypeId)
+                // custom types support
+                var @switch = new Dictionary<Type, Action>
                 {
-                    case TypeId.Object:
-                        WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Array:
-                        WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.IDictionary:
-                        WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.IEnumerable:
-                        WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.KeyValuePair:
-                        WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Tuple:
-                        WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Enum:
-                        WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
-                        break;
-                    default:
-                        WriteValueType(writer, lengthStartPosition, obj, typeSupport);
-                        break;
+                    { typeof(XDocument), () => WriteValueType(writer, lengthStartPosition, obj, typeSupport) },
+                };
+
+                if (@switch.ContainsKey(typeSupport.Type))
+                    @switch[typeSupport.Type]();
+                else
+                {
+                    switch (objectTypeId)
+                    {
+                        case TypeId.Object:
+                            WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Struct:
+                            WriteStructType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Array:
+                            WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.IDictionary:
+                            WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.IEnumerable:
+                            WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.KeyValuePair:
+                            WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Tuple:
+                            WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Enum:
+                            WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
+                            break;
+                        default:
+                            WriteValueType(writer, lengthStartPosition, obj, typeSupport);
+                            break;
+                    }
                 }
             }
 
@@ -198,12 +229,23 @@ namespace AnySerializer
                             writer.Write(bytes);
                             }
                         },
+                        { typeof(XDocument), () =>
+                            {
+                            var bytes = _customSerializers[typeof(XDocument)].Value.Serialize((XDocument)obj);
+                            writer.Write(bytes);
+                            }
+                        },
                         { typeof(string), () =>
                             {
                                 writer.Write((string)obj);
                             }
                         },
                         { typeof(char), () => writer.Write((char)obj) },
+                        { typeof(IntPtr), () => 
+                            {
+                                writer.Write(((IntPtr)obj).ToInt64());
+                            }
+                        },
                         { typeof(Guid), () => writer.Write(((Guid)obj).ToByteArray()) },
                         { typeof(DateTime), () => writer.Write(((DateTime)obj).ToBinary()) },
                         { typeof(TimeSpan), () => writer.Write(((TimeSpan)obj).Ticks) },
@@ -315,25 +357,18 @@ namespace AnySerializer
             WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
         }
 
-        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        internal void WriteStructType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
-            var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+            var fields = obj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.Name}";
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
-                ExtendedType concreteFieldExtendedType = null;
-                if (fieldExtendedType.ConcreteType != null && fieldExtendedType.Type != fieldExtendedType.ConcreteType)
-                    concreteFieldExtendedType = new ExtendedType(fieldExtendedType.ConcreteType);
-
-                // a special condition for writing anonymous types
-                if (concreteFieldExtendedType?.IsAnonymous == true)
-                    fieldExtendedType = concreteFieldExtendedType;
 
                 if (fieldExtendedType.IsDelegate)
                     continue;
@@ -342,7 +377,34 @@ namespace AnySerializer
                 if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
-                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                    continue;
+
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
+            }
+        }
+
+        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        {
+            // write each element
+            var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+
+            var rootPath = path;
+            foreach (var field in fields)
+            {
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldValue = obj.GetFieldValue(field);
+                fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
+
+                if (fieldExtendedType.IsDelegate)
+                    continue;
+
+                // check for ignore attributes
+                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                    continue;
+                // also check the property for ignore, if this is a auto-backing property
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
                 WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
