@@ -77,8 +77,8 @@ namespace AnySerializer.Tests
         {
             var test = new BasicObject { Id = 1, Description = "Description", IsEnabled = true };
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test, ".Description");
-            var testDeserialized = provider.Deserialize<BasicObject>(bytes, "Description");
+            var bytes = provider.Serialize(test, ".BasicObject.Description");
+            var testDeserialized = provider.Deserialize<BasicObject>(bytes, ".BasicObject.Description");
             Assert.AreEqual(test.Id, testDeserialized.Id);
             Assert.AreEqual(test.IsEnabled, testDeserialized.IsEnabled);
             Assert.IsNull(testDeserialized.Description);
@@ -101,8 +101,8 @@ namespace AnySerializer.Tests
         {
             var test = new BasicObject { Id = 1, Description = "Description", IsEnabled = true };
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(test, ".<Description>k__BackingField");
-            var testDeserialized = provider.Deserialize<BasicObject>(bytes, ".<Description>k__BackingField");
+            var bytes = provider.Serialize(test, ".BasicObject.<Description>k__BackingField");
+            var testDeserialized = provider.Deserialize<BasicObject>(bytes, ".BasicObject.<Description>k__BackingField");
             Assert.AreEqual(test.Id, testDeserialized.Id);
             Assert.AreEqual(test.IsEnabled, testDeserialized.IsEnabled);
             Assert.IsNull(testDeserialized.Description);

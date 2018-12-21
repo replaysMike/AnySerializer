@@ -218,8 +218,10 @@ namespace AnySerializer
             switch (objectTypeId)
             {
                 case TypeId.Object:
-                case TypeId.Struct:
                     newObj = ReadObjectType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                    break;
+                case TypeId.Struct:
+                    newObj = ReadStructType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
                     break;
                 case TypeId.Array:
                     newObj = ReadArrayType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
@@ -448,18 +450,15 @@ namespace AnySerializer
             return newObj;
         }
 
-        internal object ReadObjectType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
+        internal object ReadStructType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
         {
             // read each property into the object
-            var fields = newObj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+            var fields = newObj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
-                if (path == ".XObject.parent")
-                    System.Diagnostics.Debugger.Break();
-
                 uint dataLength = 0;
                 uint headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);
@@ -471,7 +470,37 @@ namespace AnySerializer
                 if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
-                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                    continue;
+
+                var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+                newObj.SetFieldValue(field, fieldValue);
+            }
+
+            return newObj;
+        }
+
+        internal object ReadObjectType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
+        {
+            // read each property into the object
+            var fields = newObj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+
+            var rootPath = path;
+            foreach (var field in fields)
+            {
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                uint dataLength = 0;
+                uint headerLength = 0;
+                var fieldExtendedType = new ExtendedType(field.Type);
+
+                if (fieldExtendedType.IsDelegate)
+                    continue;
+
+                // check for ignore attributes
+                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                    continue;
+                // also check the property for ignore, if this is a auto-backing property
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
                 var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, path, ref dataLength, ref headerLength);

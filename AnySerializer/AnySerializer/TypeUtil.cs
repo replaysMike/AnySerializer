@@ -178,9 +178,6 @@ namespace AnySerializer
             if (typeSupport.IsEnum)
                 return TypeId.Enum;
 
-            if (typeSupport.IsStruct)
-                return TypeId.Struct;
-
             if (typeSupport.IsGeneric && typeSupport.Type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                 return TypeManagement.TypeMapping[typeof(KeyValuePair<,>)];
 
@@ -218,6 +215,9 @@ namespace AnySerializer
 
             if (typeSupport.Type == typeof(IntPtr))
                 return TypeManagement.TypeMapping[typeof(long)];
+
+            if (typeSupport.IsStruct && typeSupport.Type != typeof(decimal))
+                return TypeId.Struct;
 
             if (typeSupport.IsValueType || typeSupport.IsPrimitive)
                 throw new InvalidOperationException($"Unsupported type: {typeSupport.NullableBaseType.FullName}");

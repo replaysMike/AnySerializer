@@ -72,10 +72,7 @@ namespace AnySerializer
             TypeId objectTypeId = TypeId.None;
             try
             {
-                if (typeSupport.IsStruct)
-                    objectTypeId = TypeId.Struct;
-                else
-                    objectTypeId = TypeUtil.GetTypeId(typeSupport);
+                objectTypeId = TypeUtil.GetTypeId(typeSupport);
             }
             catch (InvalidOperationException ex)
             {
@@ -143,8 +140,10 @@ namespace AnySerializer
                 switch (objectTypeId)
                 {
                     case TypeId.Object:
-                    case TypeId.Struct:
                         WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                        break;
+                    case TypeId.Struct:
+                        WriteStructType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
                         break;
                     case TypeId.Array:
                         WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
@@ -339,18 +338,15 @@ namespace AnySerializer
             WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
         }
 
-        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        internal void WriteStructType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
-            var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+            var fields = obj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
             foreach (var field in fields)
             {
                 path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
-                //if (path == ".XObject.parent")
-                if(path == ".XContainer.content.XContainer.content.XNode.next.XContainer.content")
-                    System.Diagnostics.Debugger.Break();
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
@@ -362,7 +358,34 @@ namespace AnySerializer
                 if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
-                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
+                    continue;
+
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
+            }
+        }
+
+        internal void WriteObjectType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        {
+            // write each element
+            var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+
+            var rootPath = path;
+            foreach (var field in fields)
+            {
+                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldValue = obj.GetFieldValue(field);
+                fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
+
+                if (fieldExtendedType.IsDelegate)
+                    continue;
+
+                // check for ignore attributes
+                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                    continue;
+                // also check the property for ignore, if this is a auto-backing property
+                if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
                 WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
