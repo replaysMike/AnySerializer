@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using TypeSupport;
 using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
@@ -62,7 +63,8 @@ namespace AnySerializer
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
             {
                 { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
-                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) }
+                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
+                { typeof(XDocument), new Lazy<ICustomSerializer>(() => new XDocumentSerializer()) },
             };
         }
 
@@ -137,35 +139,46 @@ namespace AnySerializer
                 // ensure we can refer back to the reference for this object
                 objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
 
-                switch (objectTypeId)
+                // custom types support
+                var @switch = new Dictionary<Type, Action>
                 {
-                    case TypeId.Object:
-                        WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Struct:
-                        WriteStructType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Array:
-                        WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.IDictionary:
-                        WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.IEnumerable:
-                        WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.KeyValuePair:
-                        WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Tuple:
-                        WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
-                        break;
-                    case TypeId.Enum:
-                        WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
-                        break;
-                    default:
-                        WriteValueType(writer, lengthStartPosition, obj, typeSupport);
-                        break;
+                    { typeof(XDocument), () => WriteValueType(writer, lengthStartPosition, obj, typeSupport) },
+                };
+
+                if (@switch.ContainsKey(typeSupport.Type))
+                    @switch[typeSupport.Type]();
+                else
+                {
+                    switch (objectTypeId)
+                    {
+                        case TypeId.Object:
+                            WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Struct:
+                            WriteStructType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Array:
+                            WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.IDictionary:
+                            WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.IEnumerable:
+                            WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.KeyValuePair:
+                            WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Tuple:
+                            WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            break;
+                        case TypeId.Enum:
+                            WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
+                            break;
+                        default:
+                            WriteValueType(writer, lengthStartPosition, obj, typeSupport);
+                            break;
+                    }
                 }
             }
 
@@ -213,6 +226,12 @@ namespace AnySerializer
                         { typeof(Enum), () =>
                             {
                             var bytes = _customSerializers[typeof(Enum)].Value.Serialize((Enum)obj);
+                            writer.Write(bytes);
+                            }
+                        },
+                        { typeof(XDocument), () =>
+                            {
+                            var bytes = _customSerializers[typeof(XDocument)].Value.Serialize((XDocument)obj);
                             writer.Write(bytes);
                             }
                         },

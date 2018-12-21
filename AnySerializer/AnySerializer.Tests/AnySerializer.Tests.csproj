@@ -26,9 +26,13 @@
 
   <ItemGroup>
     <None Remove="TestData\basic.xml" />
+    <None Remove="TestData\complex.xml" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="TestData\complex.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="TestData\basic.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

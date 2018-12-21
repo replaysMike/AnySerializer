@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using TypeSupport;
 using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
@@ -62,7 +63,8 @@ namespace AnySerializer
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
             {
                 { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
-                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) }
+                { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
+                { typeof(XDocument), new Lazy<ICustomSerializer>(() => new XDocumentSerializer()) },
             };
 
         }
@@ -215,35 +217,47 @@ namespace AnySerializer
                 throw new DataFormatException($"[{path}] {ex.Message}", ex);
             }
 
-            switch (objectTypeId)
+            // custom types support
+            var objectDataLength = dataLength;
+            var @switch = new Dictionary<Type, Func<object>>
+                {
+                    { typeof(XDocument), () => { return ReadValueType(reader, objectDataLength, typeSupport, currentDepth, path); } },
+                };
+
+            if (@switch.ContainsKey(typeSupport.Type))
+                newObj = @switch[typeSupport.Type]();
+            else
             {
-                case TypeId.Object:
-                    newObj = ReadObjectType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.Struct:
-                    newObj = ReadStructType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.Array:
-                    newObj = ReadArrayType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.IDictionary:
-                    newObj = ReadDictionaryType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.IEnumerable:
-                    newObj = ReadEnumerableType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.KeyValuePair:
-                    newObj = ReadKeyValueType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                case TypeId.Enum:
-                    newObj = ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), currentDepth, path);
-                    break;
-                case TypeId.Tuple:
-                    newObj = ReadTupleType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
-                    break;
-                default:
-                    newObj = ReadValueType(reader, dataLength, typeSupport, currentDepth, path);
-                    break;
+                switch (objectTypeId)
+                {
+                    case TypeId.Object:
+                        newObj = ReadObjectType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.Struct:
+                        newObj = ReadStructType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.Array:
+                        newObj = ReadArrayType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.IDictionary:
+                        newObj = ReadDictionaryType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.IEnumerable:
+                        newObj = ReadEnumerableType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.KeyValuePair:
+                        newObj = ReadKeyValueType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    case TypeId.Enum:
+                        newObj = ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), currentDepth, path);
+                        break;
+                    case TypeId.Tuple:
+                        newObj = ReadTupleType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        break;
+                    default:
+                        newObj = ReadValueType(reader, dataLength, typeSupport, currentDepth, path);
+                        break;
+                }
             }
 
             // store the object reference id in the object reference map
@@ -272,6 +286,10 @@ namespace AnySerializer
                 { typeof(string), () => reader.ReadString() },
                 { typeof(Enum), () => {
                     var result = _customSerializers[typeof(Enum)].Value.Deserialize(reader.ReadBytes((int)dataLength), dataLength);
+                    return result;
+                }},
+                { typeof(XDocument), () => {
+                    var result = _customSerializers[typeof(XDocument)].Value.Deserialize(reader.ReadBytes((int)dataLength), dataLength);
                     return result;
                 }},
                 { typeof(char), () => reader.ReadChar() },
