@@ -33,9 +33,8 @@ namespace AnySerializer
         /// </summary>
         /// <param name="obj">The object to serialize</param>
         /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
-        /// <param name="ignorePropertiesOrPaths">List of property names or property paths to ignore</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj, bool embedTypes = false)
+        public byte[] Serialize<T>(T obj, bool embedTypes)
         {
             return Serialize<T>(obj, embedTypes ? SerializerOptions.EmbedTypes : SerializerOptions.None);
         }
@@ -44,7 +43,6 @@ namespace AnySerializer
         /// Serialize an object to a byte array
         /// </summary>
         /// <param name="obj">The object to serialize</param>
-        /// <param name="ignorePropertiesOrPaths">List of property names or property paths to ignore</param>
         /// <returns></returns>
         public byte[] Serialize<T>(T obj)
         {
@@ -431,7 +429,9 @@ namespace AnySerializer
             if (stream.Length == 0)
                 return null;
             var bytes = new byte[stream.Length];
-            stream.Read(bytes, 0, bytes.Length);
+            var bytesRead = stream.Read(bytes, 0, bytes.Length);
+            if (bytesRead < bytes.Length)
+                throw new InvalidOperationException($"The data read ({bytesRead}) was different than the expected bytes to read ({bytes.Length})! This indicates corrupt data.");
 
             return _deserializer.InspectAndDeserialize(type, bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes);
         }

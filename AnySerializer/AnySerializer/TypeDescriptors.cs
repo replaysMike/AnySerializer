@@ -85,7 +85,9 @@ namespace AnySerializer
                     using(var writer = new StreamWriter(lz4Stream))
                     {
                         foreach (var typeDescriptor in Types)
+                        {
                             writer.Write($"{typeDescriptor.TypeId}|{typeDescriptor.FullName}\r\n");
+                        }
                     }
                 }
                 return stream.ToArray();
@@ -107,7 +109,7 @@ namespace AnySerializer
                         string line;
                         while ((line = reader.ReadLine()) != null)
                         {
-                            string[] parts = line.Split(new char[] { '|' }, 2);
+                            var parts = line.Split(new char[] { '|' }, 2);
 
                             Types.Add(new TypeDescriptor(ushort.Parse(parts[0]), parts[1]));
                         }

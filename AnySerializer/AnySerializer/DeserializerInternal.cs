@@ -29,7 +29,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="typeRegistry">Custom type registry</param>
         /// <returns></returns>
-        internal T InspectAndDeserialize<T>(byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
+        internal T InspectAndDeserialize<T>(byte[] sourceBytes, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             return (T)InspectAndDeserialize(typeof(T), sourceBytes, maxDepth, options, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths);
         }
@@ -45,7 +45,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="typeRegistry">Custom type registry</param>
         /// <returns></returns>
-        internal object InspectAndDeserialize(Type type, byte[] sourceBytes, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
+        internal object InspectAndDeserialize(Type type, byte[] sourceBytes, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (sourceBytes == null)
                 return null;

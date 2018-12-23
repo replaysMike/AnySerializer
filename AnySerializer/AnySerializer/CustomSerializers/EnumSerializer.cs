@@ -19,9 +19,9 @@ namespace AnySerializer.CustomSerializers
                     return BitConverter.ToInt32(bytes, 0);
                 case 8:
                     return BitConverter.ToInt64(bytes, 0);
+                default:
+                    throw new Exception($"Unknown Enum size - {length} bytes");
             }
-
-            throw new Exception($"Unknown Enum size - {length} bytes");
         }
 
         public byte[] Serialize(object type)
@@ -29,7 +29,7 @@ namespace AnySerializer.CustomSerializers
             var integralType = type.GetType().GetEnumUnderlyingType();
             var value = Convert.ChangeType(type, integralType);
             if (integralType == typeof(byte))
-                return new byte[] { (byte)value };
+                return new [] { (byte)value };
             else if (integralType == typeof(sbyte))
                 return BitConverter.GetBytes((sbyte)value);
             else if (integralType == typeof(short))

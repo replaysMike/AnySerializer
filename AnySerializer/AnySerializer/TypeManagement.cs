@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 
 namespace AnySerializer
 {
     public static class TypeManagement
     {
-        public static readonly IDictionary<Type, TypeId> TypeMapping = new Dictionary<Type, TypeId> {
+        public static readonly IReadOnlyDictionary<Type, TypeId> TypeMapping = new ReadOnlyDictionary<Type, TypeId>(new Dictionary<Type, TypeId> {
                         { typeof(bool), TypeId.Bool },
                         { typeof(byte), TypeId.Byte },
                         { typeof(sbyte), TypeId.Byte },
@@ -35,7 +36,7 @@ namespace AnySerializer
                         { typeof(IDictionary<,>), TypeId.IDictionary },
                         { typeof(Tuple<,>), TypeId.Tuple },
                         { typeof(KeyValuePair<,>), TypeId.KeyValuePair},
-                    };
+                    });
 
         /// <summary>
         /// The supported serialization data type
