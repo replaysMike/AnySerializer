@@ -119,7 +119,7 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, SerializerOptions options, ICollection<string> ignorePropertiesOrPaths)
         {
-            if (obj == null)
+            if (object.Equals(obj, default(T))
                 throw new ArgumentNullException(nameof(obj));
             return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes, ignorePropertiesOrPaths);
         }
@@ -415,7 +415,10 @@ namespace AnySerializer
             if (stream.Length == 0)
                 return default(T);
             var bytes = new byte[stream.Length];
-            stream.Read(bytes, 0, bytes.Length);
+            var bytesRead = stream.Read(bytes, 0, bytes.Length);
+
+            if (bytesRead != bytes.Length)
+                throw new InvalidOperationException($"The data read ({bytesRead}) was different than the expected bytes to read ({bytes.Length})! This indicates corrupt data.");
 
             return _deserializer.InspectAndDeserialize<T>(bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes);
         }
@@ -430,7 +433,7 @@ namespace AnySerializer
                 return null;
             var bytes = new byte[stream.Length];
             var bytesRead = stream.Read(bytes, 0, bytes.Length);
-            if (bytesRead < bytes.Length)
+            if (bytesRead != bytes.Length)
                 throw new InvalidOperationException($"The data read ({bytesRead}) was different than the expected bytes to read ({bytes.Length})! This indicates corrupt data.");
 
             return _deserializer.InspectAndDeserialize(type, bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes);
