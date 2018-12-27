@@ -30,9 +30,19 @@ namespace AnySerializer
         /// Get all of the fields of an object
         /// </summary>
         /// <param name="obj"></param>
+        /// <returns></returns>
+        public static ICollection<FieldInfo> GetFields(object obj)
+        {
+            return GetFields(obj, false);
+        }
+
+        /// <summary>
+        /// Get all of the fields of an object
+        /// </summary>
+        /// <param name="obj"></param>
         /// <param name="includeAutoPropertyBackingFields">True to include the compiler generated backing fields for auto-property getters/setters</param>
         /// <returns></returns>
-        public static ICollection<FieldInfo> GetFields(object obj, bool includeAutoPropertyBackingFields = false)
+        public static ICollection<FieldInfo> GetFields(object obj, bool includeAutoPropertyBackingFields)
         {
             if (obj != null)
             {
@@ -142,11 +152,9 @@ namespace AnySerializer
                         field.SetValue(obj, valueToSet);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //OnError?.Invoke(ex, path, property, obj);
-                //if (OnError == null)
-                throw ex;
+                throw;
             }
         }
 
@@ -156,11 +164,9 @@ namespace AnySerializer
             {
                 field.SetValue(obj, valueToSet);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //OnError?.Invoke(ex, path, field, obj);
-                //if (OnError == null)
-                throw ex;
+                throw;
             }
         }
 

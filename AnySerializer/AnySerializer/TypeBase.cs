@@ -9,7 +9,7 @@ namespace AnySerializer
 {
     public class TypeBase
     {
-        protected int _maxDepth;
+        protected uint _maxDepth;
         protected SerializerDataSettings _dataSettings;
         protected SerializerOptions _options;
         protected TypeDescriptors _typeDescriptors;
@@ -29,13 +29,20 @@ namespace AnySerializer
         {
             var ignoreByNameOrPath = _ignorePropertiesOrPaths?.Contains(name) == true || _ignorePropertiesOrPaths?.Contains(path) == true;
             if (ignoreByNameOrPath)
+            {
                 return true;
+            }
 #if FEATURE_CUSTOM_ATTRIBUTES
             if (attributes?.Any(x => !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes) && (_ignoreAttributes.Contains(x.AttributeType) || _ignoreAttributes.Contains(x.AttributeType.Name))) == true)
+            {
+                return true;
+            }
 #else
             if (attributes?.Any(x => !_options.BitwiseHasFlag(SerializerOptions.DisableIgnoreAttributes) && (_ignoreAttributes.Contains(x.Constructor.DeclaringType) || _ignoreAttributes.Contains(x.Constructor.DeclaringType.Name))) == true)
-#endif
+            {
                 return true;
+            }
+#endif
             return false;
         }
     }

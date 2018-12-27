@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace AnySerializer
 {
     /// <summary>
     /// Tracks object references
     /// </summary>
-    public class ObjectReferenceTracker
+    public class ObjectReferenceTracker : IEquatable<ObjectReferenceTracker>
     {
-        private ushort _currentReferenceId = 0;
+        private ushort _currentReferenceId;
         private readonly Dictionary<int, ObjectReference> _objectTree = new Dictionary<int, ObjectReference>();
 
         public ushort GetNextReferenceId()
@@ -56,27 +57,68 @@ namespace AnySerializer
         {
             return _objectTree[hashCode].Object;
         }
+
+        public override int GetHashCode()
+        {
+            return _objectTree.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+            if (obj.GetType() != typeof(ObjectReferenceTracker))
+                return false;
+            return Equals((ObjectReferenceTracker)obj);
+        }
+
+        public bool Equals(ObjectReferenceTracker other)
+        {
+            if (other == null)
+                return false;
+            var dictionaryComparer = new DictionaryComparer<int, ObjectReference>();
+            return _currentReferenceId == other._currentReferenceId
+                && dictionaryComparer.Equals(_objectTree, other._objectTree);
+        }
     }
 
     /// <summary>
     /// An object reference
     /// </summary>
-    public struct ObjectReference
+    public struct ObjectReference : IEquatable<ObjectReference>
     {
         /// <summary>
         /// The object being referenced
         /// </summary>
-        public object Object;
+        public object Object { get; }
 
         /// <summary>
         /// The unique reference id of the object
         /// </summary>
-        public ushort ReferenceId;
+        public ushort ReferenceId { get; }
 
         public ObjectReference(object obj, ushort referenceId)
         {
             Object = obj;
             ReferenceId = referenceId;
+        }
+
+        public override int GetHashCode()
+        {
+            return Object.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != typeof(ObjectReference))
+                return false;
+            return Equals((ObjectReference)obj);
+        }
+
+        public bool Equals(ObjectReference other)
+        {
+            return ReferenceId == other.ReferenceId
+                && Object == other.Object;
         }
     }
 }

@@ -52,7 +52,7 @@ namespace AnySerializer
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 isValid = false;
             }
@@ -70,13 +70,11 @@ namespace AnySerializer
             var isChunkValid = true;
             var objectTypeIdByte = reader.ReadByte();
             var objectTypeId = (TypeId)objectTypeIdByte;
-            var isNullValue = TypeUtil.IsNullValue(objectTypeId);
             var isTypeMapped = TypeUtil.IsTypeMapped(objectTypeId);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap(objectTypeId);
 
             // strip the flags and get only the type
             var objectTypeIdOnly = TypeUtil.GetTypeId(objectTypeIdByte);
-            var isValueType = TypeUtil.IsValueType(objectTypeIdOnly);
 
             uint length = 0;
             if(dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
@@ -96,9 +94,9 @@ namespace AnySerializer
                 else
                     dataLength = length - sizeof(uint);
                 // read in the type descriptor map
-                typeDescriptors = TypeReader.GetTypeDescriptorMap(reader, dataLength);
+                var typeDescriptorMap = TypeReader.GetTypeDescriptorMap(reader, dataLength);
                 // continue reading the data
-                return ReadChunk(reader, typeDescriptors, dataSettings);
+                return ReadChunk(reader, typeDescriptorMap, dataSettings);
             }
             else
             {
@@ -114,8 +112,6 @@ namespace AnySerializer
                     return false;
             }
 
-            var objectTypeSupport = TypeUtil.GetType(objectTypeIdOnly);
-
             // value type
             if (length > 0)
             {
@@ -126,21 +122,28 @@ namespace AnySerializer
                     case TypeId.Tuple:
                     case TypeId.IDictionary:
                     case TypeId.IEnumerable:
+                    case TypeId.Struct:
+                    case TypeId.Enum:
+                    case TypeId.KeyValuePair:
                     case TypeId.Object:
                         isChunkValid = ReadChunk(reader, typeDescriptors, dataSettings);
+                        if (!isChunkValid)
+                            return false;
+                        break;
+                    default:
+                        // it's not a chunk type, it's a value type
+                        isChunkValid = true;
                         break;
                 }
-                if (!isChunkValid)
-                    return false;
 
                 if(reader.BaseStream.Position - lengthStartPosition - sizeof(ushort) == 0)
                 {
                     // it's a value type, read the full data
                     byte[] data = null;
                     if (dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
-                        data = reader.ReadBytes((int)length - Constants.CompactLengthHeaderSize);
+                        data = reader.ReadBytes((int)(length - Constants.CompactLengthHeaderSize));
                     else
-                        data = reader.ReadBytes((int)length - Constants.LengthHeaderSize);
+                        data = reader.ReadBytes((int)(length - Constants.LengthHeaderSize));
                 }
                 else if(reader.BaseStream.Position < reader.BaseStream.Length)
                 {

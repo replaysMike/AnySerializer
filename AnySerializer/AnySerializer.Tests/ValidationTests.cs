@@ -40,6 +40,7 @@ namespace AnySerializer.Tests
             Assert.IsTrue(isValid);
         }
 
+#if FEATURE_COMPRESSION
         [Test]
         public void ShouldValidate_Compressed_BasicObject()
         {
@@ -55,6 +56,7 @@ namespace AnySerializer.Tests
 
             Assert.IsTrue(isValid);
         }
+#endif
 
         [Test]
         public void ShouldValidate_BasicObjectWithEmptyEmbeddedTypeDescriptors()

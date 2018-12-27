@@ -15,7 +15,7 @@ namespace AnySerializer
 {
     internal class TypeWriter : TypeBase
     {
-        private ObjectReferenceTracker _referenceTracker;
+        private readonly ObjectReferenceTracker _referenceTracker;
 
         /// <summary>
         /// Write the parent object, and recursively process it's children
@@ -27,7 +27,7 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
-        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
+        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
 
@@ -37,11 +37,17 @@ namespace AnySerializer
 
             var dataSettings = SerializerDataSettings.None;
             if (typeDescriptors != null)
+            {
                 dataSettings |= SerializerDataSettings.TypeMap;
+            }
             if (options.BitwiseHasFlag(SerializerOptions.Compact))
+            {
                 dataSettings |= SerializerDataSettings.Compact;
+            }
             if (options.BitwiseHasFlag(SerializerOptions.Compress))
+            {
                 dataSettings |= SerializerDataSettings.Compress;
+            }
             // write the serializer byte 0, data settings
             writer.Write((byte)dataSettings);
 
@@ -51,7 +57,7 @@ namespace AnySerializer
             return typeDescriptors;
         }
 
-        public TypeWriter(int maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<object> ignoreAttributes, TypeDescriptors typeDescriptors, ICollection<string> ignorePropertiesOrPaths = null)
+        public TypeWriter(uint maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<object> ignoreAttributes, TypeDescriptors typeDescriptors, ICollection<string> ignorePropertiesOrPaths = null)
         {
             _maxDepth = maxDepth;
             _dataSettings = dataSettings;
@@ -60,7 +66,7 @@ namespace AnySerializer
             _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
             _typeDescriptors = typeDescriptors;
             _referenceTracker = new ObjectReferenceTracker();
-            _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
+            _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>
             {
                 { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
                 { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
@@ -102,8 +108,6 @@ namespace AnySerializer
                 objectTypeIdByte |= (byte)TypeId.NullValue;
             if (isTypeMapped)
                 objectTypeIdByte |= (byte)TypeId.TypeMapped;
-            // indicate if it's a value type primitive
-            var isValueType = TypeUtil.IsValueType(objectTypeId);
 
             // write the object type being serialized in position 0x00
             writer.Write(objectTypeIdByte);
@@ -113,9 +117,9 @@ namespace AnySerializer
 
             // make room for the length prefix and object reference id
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
-                writer.Seek(Constants.CompactLengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
+                writer.Seek((int)(Constants.CompactLengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position), SeekOrigin.Begin);
             else
-                writer.Seek(Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
+                writer.Seek((int)(Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (int)writer.BaseStream.Position), SeekOrigin.Begin);
 
             // write the optional type descriptor id - only interfaces can store type descriptors
             var containsTypeDescriptorId = false;
@@ -188,7 +192,7 @@ namespace AnySerializer
             // if we wrote a typeDescriptorId, that doesn't apply to the dataLength
             if (containsTypeDescriptorId)
             {
-                dataLength -= Constants.ObjectTypeDescriptorId;
+                dataLength -= (int)Constants.ObjectTypeDescriptorId;
             }
             writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
@@ -363,9 +367,10 @@ namespace AnySerializer
             var fields = obj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
+            var localPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
@@ -374,13 +379,13 @@ namespace AnySerializer
                     continue;
 
                 // check for ignore attributes
-                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                if (IgnoreObjectName(field.Name, localPath, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath);
             }
         }
 
@@ -390,9 +395,10 @@ namespace AnySerializer
             var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
 
             var rootPath = path;
+            var localPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 var fieldExtendedType = new ExtendedType(field.Type);
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
@@ -401,13 +407,13 @@ namespace AnySerializer
                     continue;
 
                 // check for ignore attributes
-                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                if (IgnoreObjectName(field.Name, localPath, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, path);
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath);
             }
         }
     }

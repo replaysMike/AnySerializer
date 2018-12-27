@@ -1,4 +1,7 @@
-﻿using LZ4;
+﻿#if FEATURE_COMPRESSION
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
+#endif
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,7 +36,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        internal byte[] InspectAndSerialize(object sourceObject, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
+        internal byte[] InspectAndSerialize(object sourceObject, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (sourceObject == null)
                 return null;
@@ -65,8 +68,12 @@ namespace AnySerializer
 
             if (options.BitwiseHasFlag(SerializerOptions.Compress))
             {
+#if FEATURE_COMPRESSION
                 // enable data compression for strings
                 dataBytes = CompressData(dataBytes);
+#else
+                throw new InvalidOperationException($"Compression is only available in .Net Framework 4.6+ and .Net Standard 1.6+");
+#endif
             }
 
             return dataBytes;
@@ -74,12 +81,14 @@ namespace AnySerializer
 
         private byte[] CompressData(byte[] dataBytes)
         {
+#if FEATURE_COMPRESSION
             var settingsByte = dataBytes[0];
+            var compressedArrayWithSettingsByte = new byte[0];
             var dataBytesWithoutSettingsByte = new byte[dataBytes.Length - 1];
             Array.Copy(dataBytes, 1, dataBytesWithoutSettingsByte, 0, dataBytes.Length - 1);
             using (var compressedStream = new MemoryStream())
             {
-                using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Compress))
+                using (var lz4Stream = LZ4Stream.Encode(compressedStream))
                 {
                     using (var compressedWriter = new StreamWriter(lz4Stream))
                     {
@@ -87,12 +96,14 @@ namespace AnySerializer
                     }
                 }
                 var compressedArray = compressedStream.ToArray();
-                var compressedArrayWithSettingsByte = new byte[compressedArray.Length + 1];
+                compressedArrayWithSettingsByte = new byte[compressedArray.Length + 1];
                 compressedArrayWithSettingsByte[0] = settingsByte;
                 Array.Copy(compressedArray, 0, compressedArrayWithSettingsByte, 1, compressedArray.Length);
-                dataBytes = compressedArrayWithSettingsByte;
             }
+            return compressedArrayWithSettingsByte;
+#else
             return dataBytes;
+#endif
         }
 
         /// <summary>
@@ -116,7 +127,7 @@ namespace AnySerializer
                     var lengthStartPosition = writer.BaseStream.Position;
 
                     // make room for the length prefix
-                    writer.Seek(Constants.LengthHeaderSize + (int)writer.BaseStream.Position, SeekOrigin.Begin);
+                    writer.Seek((int)(Constants.LengthHeaderSize + writer.BaseStream.Position), SeekOrigin.Begin);
 
                     var descriptorBytes = typeDescriptors.Serialize();
                     writer.Write(descriptorBytes, 0, descriptorBytes.Length);

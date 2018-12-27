@@ -1,5 +1,8 @@
-﻿using AnySerializer.CustomSerializers;
-using LZ4;
+﻿#if FEATURE_COMPRESSION
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
+#endif
+using AnySerializer.CustomSerializers;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -16,8 +19,8 @@ namespace AnySerializer
 {
     internal class TypeReader : TypeBase
     {
-        private Dictionary<ushort, object> _objectReferences;
-        private TypeRegistry _typeRegistry;
+        private readonly Dictionary<ushort, object> _objectReferences;
+        private readonly TypeRegistry _typeRegistry;
 
         /// <summary>
         /// Read the parent object, and recursively process it's children
@@ -30,7 +33,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
         /// <returns></returns>
-        internal static object Read(BinaryReader reader, ExtendedType typeSupport, int maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
+        internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
             uint dataLength = 0;
@@ -51,7 +54,7 @@ namespace AnySerializer
             return typeReader.ReadObject(dataReader, typeSupport, currentDepth, string.Empty, ref dataLength, ref headerLength);
         }
 
-        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, int maxDepth, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
+        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, uint maxDepth, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
         {
             _dataSettings = dataSettings;
             _options = options;
@@ -60,7 +63,7 @@ namespace AnySerializer
             _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
             _typeRegistry = typeRegistry;
             _objectReferences = new Dictionary<ushort, object>();
-            _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>()
+            _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>
             {
                 { typeof(Point), new Lazy<ICustomSerializer>(() => new PointSerializer()) },
                 { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
@@ -114,7 +117,6 @@ namespace AnySerializer
             var isNullValue = TypeUtil.IsNullValue((TypeId)objectTypeByte);
             var isTypeMapped = TypeUtil.IsTypeMapped((TypeId)objectTypeByte);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap((TypeId)objectTypeByte);
-            var isValueType = TypeUtil.IsValueType(objectTypeId);
 
             // read the length prefix (minus the length field itself)
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
@@ -196,21 +198,18 @@ namespace AnySerializer
                 if (!TypeUtil.GetTypeId(objectExtendedType).Equals(objectTypeId))
                     throw new DataFormatException($"Serialized data wants to map {objectTypeId} to {typeSupport.Type.Name}, invalid data.");
             }
-            else
-            {
-
-            }
 
             object newObj = null;
+            var destinationTypeSupport = typeSupport; 
             try
             {
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
                 {
                     newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
-                    typeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
+                    destinationTypeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
                 }
                 else
-                    newObj = objectFactory.CreateEmptyObject(typeSupport.Type, _typeRegistry);
+                    newObj = objectFactory.CreateEmptyObject(destinationTypeSupport.Type, _typeRegistry);
             }
             catch (InvalidOperationException ex)
             {
@@ -221,48 +220,50 @@ namespace AnySerializer
             var objectDataLength = dataLength;
             var @switch = new Dictionary<Type, Func<object>>
                 {
-                    { typeof(XDocument), () => { return ReadValueType(reader, objectDataLength, typeSupport, currentDepth, path); } },
+                    { typeof(XDocument), () => { return ReadValueType(reader, objectDataLength, destinationTypeSupport, currentDepth, path); } },
                 };
 
-            if (@switch.ContainsKey(typeSupport.Type))
-                newObj = @switch[typeSupport.Type]();
+            if (@switch.ContainsKey(destinationTypeSupport.Type))
+                newObj = @switch[destinationTypeSupport.Type]();
             else
             {
                 switch (objectTypeId)
                 {
                     case TypeId.Object:
-                        newObj = ReadObjectType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadObjectType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.Struct:
-                        newObj = ReadStructType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadStructType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.Array:
-                        newObj = ReadArrayType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadArrayType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.IDictionary:
-                        newObj = ReadDictionaryType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadDictionaryType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.IEnumerable:
-                        newObj = ReadEnumerableType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadEnumerableType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.KeyValuePair:
-                        newObj = ReadKeyValueType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadKeyValueType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.Enum:
                         newObj = ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), currentDepth, path);
                         break;
                     case TypeId.Tuple:
-                        newObj = ReadTupleType(newObj, reader, dataLength, typeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadTupleType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     default:
-                        newObj = ReadValueType(reader, dataLength, typeSupport, currentDepth, path);
+                        newObj = ReadValueType(reader, dataLength, destinationTypeSupport, currentDepth, path);
                         break;
                 }
             }
 
             // store the object reference id in the object reference map
             if (!_objectReferences.ContainsKey(objectReferenceId))
+            {
                 _objectReferences.Add(objectReferenceId, newObj);
+            }
 
             return newObj;
         }
@@ -324,7 +325,6 @@ namespace AnySerializer
             var genericType = typeSupport.ElementType;
             var listType = typeof(List<>).MakeGenericType(genericType);
             var newList = (IList)Activator.CreateInstance(listType);
-            var enumerator = (IEnumerable)newObj;
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             while (i < length)
             {
@@ -334,14 +334,16 @@ namespace AnySerializer
                 newList.Add(element);
             }
 
+            var returnObj = newObj;
+
             // return the value
             if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
-                newObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, length: newList.Count);
+                returnObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, length: newList.Count);
             else
-                newObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, length: newList.Count);
+                returnObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, length: newList.Count);
 
-            newList.CopyTo((Array)newObj, 0);
-            return (Array)newObj;
+            newList.CopyTo((Array)returnObj, 0);
+            return (Array)returnObj;
         }
 
         internal object ReadEnumerableType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
@@ -367,7 +369,7 @@ namespace AnySerializer
                 var element = ReadObject(reader, genericExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                addMethod.Invoke(newObj, new object[] { element });
+                addMethod.Invoke(newObj, new [] { element });
             }
             return newObj;
         }
@@ -391,7 +393,6 @@ namespace AnySerializer
                 newTuple = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
             else
                 newTuple = new ObjectFactory().CreateEmptyObject(tupleType, _typeRegistry);
-            newObj = newTuple;
             var index = 0;
             while (i < length)
             {
@@ -399,9 +400,9 @@ namespace AnySerializer
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 if (typeSupport.IsValueTuple)
-                    TypeUtil.SetFieldValue($"Item{index + 1}", newObj, element);
+                    TypeUtil.SetFieldValue($"Item{index + 1}", newTuple, element);
                 else
-                    TypeUtil.SetFieldValue($"m_Item{index + 1}", newObj, element);
+                    TypeUtil.SetFieldValue($"m_Item{index + 1}", newTuple, element);
                 index++;
             }
 
@@ -424,8 +425,6 @@ namespace AnySerializer
 
             var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
             var newDictionary = Activator.CreateInstance(dictionaryType) as IDictionary;
-            newObj = newDictionary;
-            var enumerator = (IDictionary)newObj;
 
             while (i < length)
             {
@@ -443,11 +442,11 @@ namespace AnySerializer
             {
                 dictionaryType = typeof(ConcurrentDictionary<,>).MakeGenericType(typeArgs);
                 var newConcurrentDictionary = Activator.CreateInstance(dictionaryType, new object[] { newDictionary }) as IDictionary;
-                newObj = newConcurrentDictionary;
+                newDictionary = newConcurrentDictionary;
             }
 
             // return the value
-            return newObj;
+            return newDictionary;
         }
 
         internal object ReadKeyValueType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
@@ -474,9 +473,10 @@ namespace AnySerializer
             var fields = newObj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
+            var localPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
                 uint headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);
@@ -485,13 +485,13 @@ namespace AnySerializer
                     continue;
 
                 // check for ignore attributes
-                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                if (IgnoreObjectName(field.Name, localPath, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+                var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, localPath, ref dataLength, ref headerLength);
                 newObj.SetFieldValue(field, fieldValue);
             }
 
@@ -504,9 +504,10 @@ namespace AnySerializer
             var fields = newObj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
 
             var rootPath = path;
+            var localPath = path;
             foreach (var field in fields)
             {
-                path = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
+                localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
                 uint headerLength = 0;
                 var fieldExtendedType = new ExtendedType(field.Type);
@@ -515,13 +516,13 @@ namespace AnySerializer
                     continue;
 
                 // check for ignore attributes
-                if (IgnoreObjectName(field.Name, path, field.CustomAttributes))
+                if (IgnoreObjectName(field.Name, localPath, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+                var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, localPath, ref dataLength, ref headerLength);
                 newObj.SetFieldValue(field, fieldValue);
             }
 
@@ -553,19 +554,22 @@ namespace AnySerializer
             var compressedBytes = new byte[reader.BaseStream.Length - 1];
             reader.Read(compressedBytes, 0, compressedBytes.Length);
 
+#if FEATURE_COMPRESSION
             // decompress the stream
             using (var compressedStream = new MemoryStream(compressedBytes))
             {
-                using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Decompress))
+                using (var lz4Stream = LZ4Stream.Decode(compressedStream))
                 {
                     using (var compressedReader = new StreamReader(lz4Stream))
                     {
                         var encodedString = compressedReader.ReadToEnd();
                         var decodedBytes = Convert.FromBase64String(encodedString);
+                        // provide a new reader which contains the decompressed data
                         dataReader = new BinaryReader(new MemoryStream(decodedBytes));
                     }
                 }
             }
+#endif
             return dataReader;
         }
     }

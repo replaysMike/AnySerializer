@@ -6,6 +6,7 @@ namespace AnySerializer.Tests
     [TestFixture]
     public class CompressDeserializationTests
     {
+#if FEATURE_COMPRESSION
         [Test]
         public void ShouldDeserialize_Compress_Bool()
         {
@@ -43,5 +44,6 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, testDeserialized);
         }
+#endif
     }
 }
