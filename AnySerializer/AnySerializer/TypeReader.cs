@@ -1,5 +1,8 @@
-﻿using AnySerializer.CustomSerializers;
-using LZ4;
+﻿#if FEATURE_COMPRESSION
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
+#endif
+using AnySerializer.CustomSerializers;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -551,19 +554,22 @@ namespace AnySerializer
             var compressedBytes = new byte[reader.BaseStream.Length - 1];
             reader.Read(compressedBytes, 0, compressedBytes.Length);
 
+#if FEATURE_COMPRESSION
             // decompress the stream
             using (var compressedStream = new MemoryStream(compressedBytes))
             {
-                using (var lz4Stream = new LZ4Stream(compressedStream, LZ4StreamMode.Decompress))
+                using (var lz4Stream = LZ4Stream.Decode(compressedStream))
                 {
                     using (var compressedReader = new StreamReader(lz4Stream))
                     {
                         var encodedString = compressedReader.ReadToEnd();
                         var decodedBytes = Convert.FromBase64String(encodedString);
+                        // provide a new reader which contains the decompressed data
                         dataReader = new BinaryReader(new MemoryStream(decodedBytes));
                     }
                 }
             }
+#endif
             return dataReader;
         }
     }

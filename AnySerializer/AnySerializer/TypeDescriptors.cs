@@ -1,4 +1,7 @@
-﻿using LZ4;
+﻿#if FEATURE_COMPRESSION
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Streams;
+#endif
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -80,7 +83,9 @@ namespace AnySerializer
         {
             using(var stream = new MemoryStream())
             {
-                using(var lz4Stream = new LZ4Stream(stream, LZ4StreamMode.Compress))
+#if FEATURE_COMPRESSION
+                // serialize with compression
+                using (var lz4Stream = LZ4Stream.Encode(stream))
                 {
                     using(var writer = new StreamWriter(lz4Stream))
                     {
@@ -90,6 +95,17 @@ namespace AnySerializer
                         }
                     }
                 }
+#else
+                // serialize without compression
+                using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                {
+                    foreach (var typeDescriptor in Types)
+                    {
+                        var line = $"{typeDescriptor.TypeId}|{typeDescriptor.FullName}\r\n";
+                        writer.Write(line);
+                    }
+                }
+#endif
                 return stream.ToArray();
             }
         }
@@ -102,7 +118,9 @@ namespace AnySerializer
         {
             using (var stream = new MemoryStream(bytes))
             {
-                using (var lz4Stream = new LZ4Stream(stream, LZ4StreamMode.Decompress))
+#if FEATURE_COMPRESSION
+                // deserialize with compression
+                using (var lz4Stream = LZ4Stream.Decode(stream))
                 {
                     using (var reader = new StreamReader(lz4Stream))
                     {
@@ -115,6 +133,19 @@ namespace AnySerializer
                         }
                     }
                 }
+#else
+                // deserialize without compression
+                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        var parts = line.Split(new char[] { '|' }, 2);
+
+                        Types.Add(new TypeDescriptor(ushort.Parse(parts[0]), parts[1]));
+                    }
+                }
+#endif
             }
         }
     }

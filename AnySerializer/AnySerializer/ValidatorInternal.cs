@@ -52,7 +52,7 @@ namespace AnySerializer
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 isValid = false;
             }

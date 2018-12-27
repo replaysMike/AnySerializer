@@ -12,7 +12,11 @@ namespace AnySerializer.Tests
         {
             var bytes = Serialize();
             Assert.Greater(bytes.Length, 0);
+#if FEATURE_COMPRESSION
             Assert.Less(bytes.Length, 250);
+#else
+            Assert.Less(bytes.Length, 800);
+#endif
         }
 
         [Test]
