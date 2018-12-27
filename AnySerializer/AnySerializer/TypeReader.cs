@@ -334,10 +334,10 @@ namespace AnySerializer
                 newList.Add(element);
             }
 
-            var returnObj = newObj;
+            object returnObj = null;
 
             // return the value
-            if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
+            if (typeDescriptor != null && !string.IsNullOrEmpty(typeDescriptor.FullName))
                 returnObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, length: newList.Count);
             else
                 returnObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, length: newList.Count);
@@ -389,7 +389,7 @@ namespace AnySerializer
             else
                 tupleType = TypeSupport.Extensions.TupleExtensions.CreateTuple(typeSupports.Select(x => x.Type).ToList());
             object newTuple = null;
-            if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
+            if (typeDescriptor != null && !string.IsNullOrEmpty(typeDescriptor.FullName))
                 newTuple = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
             else
                 newTuple = new ObjectFactory().CreateEmptyObject(tupleType, _typeRegistry);
@@ -399,10 +399,10 @@ namespace AnySerializer
                 var element = ReadObject(reader, typeSupports[index], currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
+                var fieldName = $"m_Item{index + 1}";
                 if (typeSupport.IsValueTuple)
-                    TypeUtil.SetFieldValue($"Item{index + 1}", newTuple, element);
-                else
-                    TypeUtil.SetFieldValue($"m_Item{index + 1}", newTuple, element);
+                    fieldName = $"Item{index + 1}";
+                TypeUtil.SetFieldValue(fieldName, newTuple, element);
                 index++;
             }
 
@@ -473,7 +473,7 @@ namespace AnySerializer
             var fields = newObj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
-            var localPath = path;
+            var localPath = string.Empty;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
@@ -504,7 +504,7 @@ namespace AnySerializer
             var fields = newObj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
 
             var rootPath = path;
-            var localPath = path;
+            var localPath = string.Empty;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";

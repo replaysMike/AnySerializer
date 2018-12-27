@@ -52,7 +52,7 @@ namespace AnySerializer
             writer.Write((byte)dataSettings);
 
             var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors, ignorePropertiesOrPaths);
-            var length = typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty);
+            typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty);
 
             return typeDescriptors;
         }
@@ -78,9 +78,10 @@ namespace AnySerializer
         {
             var isTypeMapped = false;
             TypeId objectTypeId = TypeId.None;
+            var newTypeSupport = typeSupport;
             try
             {
-                objectTypeId = TypeUtil.GetTypeId(typeSupport);
+                objectTypeId = TypeUtil.GetTypeId(newTypeSupport);
             }
             catch (InvalidOperationException ex)
             {
@@ -88,18 +89,18 @@ namespace AnySerializer
             }
 
             // if the object type is not a concrete type, indicate so in the type mask
-            isTypeMapped = _typeDescriptors != null && !typeSupport.IsConcreteType;
+            isTypeMapped = _typeDescriptors != null && !newTypeSupport.IsConcreteType;
             // also resolve the concrete type as it may require being typemapped
-            if (_typeDescriptors != null && typeSupport.ConcreteType != null && typeSupport.Type != typeSupport.ConcreteType && !typeSupport.IsConcreteType)
+            if (_typeDescriptors != null && newTypeSupport.ConcreteType != null && newTypeSupport.Type != newTypeSupport.ConcreteType && !newTypeSupport.IsConcreteType)
             {
                 // a special condition for writing anonymous types and types without implementation or concrete type
-                typeSupport = new ExtendedType(typeSupport.ConcreteType);
+                newTypeSupport = new ExtendedType(newTypeSupport.ConcreteType);
                 isTypeMapped = true;
-                objectTypeId = TypeUtil.GetTypeId(typeSupport);
+                objectTypeId = TypeUtil.GetTypeId(newTypeSupport);
             }
 
             // if we couldn't resolve a concrete type, don't map it
-            if (isTypeMapped && typeSupport.Type == typeof(object))
+            if (isTypeMapped && newTypeSupport.Type == typeof(object))
                 isTypeMapped = false;
 
             byte objectTypeIdByte = (byte)objectTypeId;
@@ -125,7 +126,7 @@ namespace AnySerializer
             var containsTypeDescriptorId = false;
             if (isTypeMapped)
             {
-                var typeId = _typeDescriptors.AddKnownType(typeSupport);
+                var typeId = _typeDescriptors.AddKnownType(newTypeSupport);
                 writer.Write(typeId);
                 containsTypeDescriptorId = true;
             }
@@ -146,41 +147,41 @@ namespace AnySerializer
                 // custom types support
                 var @switch = new Dictionary<Type, Action>
                 {
-                    { typeof(XDocument), () => WriteValueType(writer, lengthStartPosition, obj, typeSupport) },
+                    { typeof(XDocument), () => WriteValueType(writer, lengthStartPosition, obj, newTypeSupport) },
                 };
 
-                if (@switch.ContainsKey(typeSupport.Type))
-                    @switch[typeSupport.Type]();
+                if (@switch.ContainsKey(newTypeSupport.Type))
+                    @switch[newTypeSupport.Type]();
                 else
                 {
                     switch (objectTypeId)
                     {
                         case TypeId.Object:
-                            WriteObjectType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteObjectType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.Struct:
-                            WriteStructType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteStructType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.Array:
-                            WriteArrayType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteArrayType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.IDictionary:
-                            WriteDictionaryType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteDictionaryType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.IEnumerable:
-                            WriteEnumerableType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteEnumerableType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.KeyValuePair:
-                            WriteKeyValueType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteKeyValueType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.Tuple:
-                            WriteTupleType(writer, lengthStartPosition, obj, typeSupport, currentDepth, path);
+                            WriteTupleType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.Enum:
                             WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
                             break;
                         default:
-                            WriteValueType(writer, lengthStartPosition, obj, typeSupport);
+                            WriteValueType(writer, lengthStartPosition, obj, newTypeSupport);
                             break;
                     }
                 }
@@ -198,7 +199,7 @@ namespace AnySerializer
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
             {
                 if (dataLength > ushort.MaxValue)
-                    throw new ExceedsMaxSizeException($"The object type '{typeSupport.Type}' serializes to a data size '{dataLength}' which is greater than supported for Compact mode (max: '{ushort.MaxValue}')");
+                    throw new ExceedsMaxSizeException($"The object type '{newTypeSupport.Type}' serializes to a data size '{dataLength}' which is greater than supported for Compact mode (max: '{ushort.MaxValue}')");
                 writer.Write((ushort)dataLength);
             }
             else
@@ -356,8 +357,7 @@ namespace AnySerializer
             // write the key
             WriteObject(writer, key, keyExtendedType, currentDepth, path);
             // write the value
-            if (value != null && valueConcreteExtendedType == null)
-                valueConcreteExtendedType = value.GetType().GetExtendedType();
+            valueConcreteExtendedType = value?.GetType().GetExtendedType();
             WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
         }
 
@@ -367,7 +367,7 @@ namespace AnySerializer
             var fields = obj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
 
             var rootPath = path;
-            var localPath = path;
+            var localPath = string.Empty;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
@@ -395,7 +395,7 @@ namespace AnySerializer
             var fields = obj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
 
             var rootPath = path;
-            var localPath = path;
+            var localPath = string.Empty;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";

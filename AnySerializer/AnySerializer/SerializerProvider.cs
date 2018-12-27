@@ -17,9 +17,9 @@ namespace AnySerializer
             typeof(NonSerializedAttribute),
             "JsonIgnoreAttribute",
         };
-        private SerializerInternal _serializer;
-        private DeserializerInternal _deserializer;
-        private ValidatorInternal _validator;
+        private readonly SerializerInternal _serializer;
+        private readonly DeserializerInternal _deserializer;
+        private readonly ValidatorInternal _validator;
 
         public SerializerProvider()
         {
@@ -92,7 +92,7 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, SerializerOptions options, params string[] ignorePropertiesOrPaths)
         {
-            if (obj == null)
+            if (object.Equals(obj, default(T)))
                 throw new ArgumentNullException(nameof(obj));
             return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes, ignorePropertiesOrPaths);
         }

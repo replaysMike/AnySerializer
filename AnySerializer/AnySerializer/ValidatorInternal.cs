@@ -73,9 +73,6 @@ namespace AnySerializer
             var isTypeMapped = TypeUtil.IsTypeMapped(objectTypeId);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap(objectTypeId);
 
-            // strip the flags and get only the type
-            var objectTypeIdOnly = TypeUtil.GetTypeId(objectTypeIdByte);
-
             uint length = 0;
             if(dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
                 length = reader.ReadUInt16();
