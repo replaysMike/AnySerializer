@@ -1,16 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace AnySerializer
 {
     public class DictionaryComparer<TKey, TValue> : IEqualityComparer<IDictionary<TKey, TValue>>
     {
-        private IEqualityComparer<TValue> valueComparer;
-        public DictionaryComparer(IEqualityComparer<TValue> valueComparer = null)
+        private readonly IEqualityComparer<TValue> _valueComparer;
+
+        public DictionaryComparer() : this(null)
         {
-            this.valueComparer = valueComparer ?? EqualityComparer<TValue>.Default;
+        }
+
+        public DictionaryComparer(IEqualityComparer<TValue> valueComparer)
+        {
+            _valueComparer = valueComparer ?? EqualityComparer<TValue>.Default;
         }
 
         public bool Equals(IDictionary<TKey, TValue> x, IDictionary<TKey, TValue> y)
@@ -22,7 +25,7 @@ namespace AnySerializer
             if (y.Keys.Except(x.Keys).Any())
                 return false;
             foreach (var pair in x)
-                if (!valueComparer.Equals(pair.Value, y[pair.Key]))
+                if (!_valueComparer.Equals(pair.Value, y[pair.Key]))
                     return false;
             return true;
         }

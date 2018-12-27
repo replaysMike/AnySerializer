@@ -79,9 +79,9 @@ namespace AnySerializer
             return dataBytes;
         }
 
+#if FEATURE_COMPRESSION
         private byte[] CompressData(byte[] dataBytes)
         {
-#if FEATURE_COMPRESSION
             var settingsByte = dataBytes[0];
             var compressedArrayWithSettingsByte = new byte[0];
             var dataBytesWithoutSettingsByte = new byte[dataBytes.Length - 1];
@@ -101,10 +101,8 @@ namespace AnySerializer
                 Array.Copy(compressedArray, 0, compressedArrayWithSettingsByte, 1, compressedArray.Length);
             }
             return compressedArrayWithSettingsByte;
-#else
-            return dataBytes;
-#endif
         }
+#endif
 
         /// <summary>
         /// Build a map of all of the types used in serialization
@@ -132,7 +130,6 @@ namespace AnySerializer
                     var descriptorBytes = typeDescriptors.Serialize();
                     writer.Write(descriptorBytes, 0, descriptorBytes.Length);
 
-                    var currentPosition = writer.BaseStream.Position;
                     // write the length header at the start of this object
                     var length = writer.BaseStream.Length - lengthStartPosition;
                     writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);

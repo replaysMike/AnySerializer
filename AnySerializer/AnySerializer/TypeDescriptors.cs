@@ -127,7 +127,7 @@ namespace AnySerializer
                         string line;
                         while ((line = reader.ReadLine()) != null)
                         {
-                            var parts = line.Split(new char[] { '|' }, 2);
+                            var parts = line.Split(new [] { '|' }, 2);
 
                             Types.Add(new TypeDescriptor(ushort.Parse(parts[0]), parts[1]));
                         }
@@ -140,7 +140,7 @@ namespace AnySerializer
                     string line;
                     while ((line = reader.ReadLine()) != null)
                     {
-                        var parts = line.Split(new char[] { '|' }, 2);
+                        var parts = line.Split(new [] { '|' }, 2);
 
                         Types.Add(new TypeDescriptor(ushort.Parse(parts[0]), parts[1]));
                     }
@@ -153,7 +153,7 @@ namespace AnySerializer
     /// <summary>
     /// A type descriptor that defines a Type Id and the full class name of the type
     /// </summary>
-    public class TypeDescriptor
+    public class TypeDescriptor : IEquatable<TypeDescriptor>
     {
         /// <summary>
         /// The type id
@@ -183,12 +183,19 @@ namespace AnySerializer
         public override bool Equals(object obj)
         {
             var other = (TypeDescriptor)obj;
-            return TypeId == other.TypeId;
+            return TypeId == other.TypeId && FullName.Equals(other.FullName);
         }
 
         public override string ToString()
         {
             return $"{FullName}";
+        }
+
+        public bool Equals(TypeDescriptor other)
+        {
+            if (other == null)
+                return false;
+            return TypeId == other.TypeId && FullName.Equals(other.FullName);
         }
     }
 }

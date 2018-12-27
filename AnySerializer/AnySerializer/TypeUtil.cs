@@ -132,42 +132,28 @@ namespace AnySerializer
 
         public static void SetPropertyValue(PropertyInfo property, object obj, object valueToSet, string path)
         {
-            try
+            if (property.GetSetMethod(true) != null)
             {
-                if (property.GetSetMethod(true) != null)
-                {
-                    var indexParameters = property.GetIndexParameters();
-                    if(!indexParameters.Any())
+                var indexParameters = property.GetIndexParameters();
+                if(!indexParameters.Any())
 #if FEATURE_SETVALUE
-                        property.SetValue(obj, valueToSet);
+                    property.SetValue(obj, valueToSet);
 #else
-                    property.SetValue(obj, valueToSet, null);
+                property.SetValue(obj, valueToSet, null);
 #endif
-                }
-                else
-                {
-                    // if this is an auto-property with a backing field, set it
-                    var field = obj.GetType().GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
-                    if (field != null)
-                        field.SetValue(obj, valueToSet);
-                }
             }
-            catch (Exception)
+            else
             {
-                throw;
+                // if this is an auto-property with a backing field, set it
+                var field = obj.GetType().GetField($"<{property.Name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (field != null)
+                    field.SetValue(obj, valueToSet);
             }
         }
 
         public static void SetFieldValue(FieldInfo field, object obj, object valueToSet, string path)
         {
-            try
-            {
-                field.SetValue(obj, valueToSet);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            field.SetValue(obj, valueToSet);
         }
 
 

@@ -20,7 +20,7 @@ namespace AnySerializer.CustomSerializers
                 case 8:
                     return BitConverter.ToInt64(bytes, 0);
                 default:
-                    throw new Exception($"Unknown Enum size - {length} bytes");
+                    throw new CustomSerializerException(typeof(EnumSerializer), $"Unknown Enum size - {length} bytes");
             }
         }
 
