@@ -92,7 +92,7 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, SerializerOptions options, params string[] ignorePropertiesOrPaths)
         {
-            if (Object.Equals(obj, default(T)))
+            if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
             return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes, ignorePropertiesOrPaths);
         }
@@ -105,7 +105,7 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, SerializerOptions options)
         {
-            if (Object.Equals(obj, default(T)))
+            if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
             return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes);
         }
@@ -119,7 +119,7 @@ namespace AnySerializer
         /// <returns></returns>
         public byte[] Serialize<T>(T obj, SerializerOptions options, ICollection<string> ignorePropertiesOrPaths)
         {
-            if (Object.Equals(obj, default(T)))
+            if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
             return _serializer.InspectAndSerialize(obj, Constants.DefaultMaxDepth, options, _ignoreAttributes, ignorePropertiesOrPaths);
         }
