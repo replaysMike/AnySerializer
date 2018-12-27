@@ -9,9 +9,9 @@
     <PackageProjectUrl>https://github.com/replaysMike/AnySerializer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/replaysMike/AnySerializer</RepositoryUrl>
     <PackageTags>serialize deserialize object serialization deserialization refactor software michael brown</PackageTags>
-    <AssemblyVersion>1.0.7.0</AssemblyVersion>
-    <FileVersion>1.0.7.0</FileVersion>
-    <Version>1.0.7</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
