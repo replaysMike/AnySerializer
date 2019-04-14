@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TypeSupport" Version="1.0.45" />
+    <PackageReference Include="TypeSupport" Version="1.0.51" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net461' OR '$(TargetFramework)'=='net462' OR '$(TargetFramework)'=='net47'">
@@ -41,6 +41,10 @@
     <PackageReference Include="K4os.Compression.LZ4.Streams">
       <Version>1.1.1</Version>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\TypeSupport\TypeSupport\TypeSupport\TypeSupport.csproj" />
   </ItemGroup>
 
 </Project>
