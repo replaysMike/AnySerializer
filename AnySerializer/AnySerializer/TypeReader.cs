@@ -91,6 +91,8 @@ namespace AnySerializer
         /// <returns></returns>
         internal object ReadObject(BinaryReader reader, ExtendedType typeSupport, int currentDepth, string path, ref uint dataLength, ref uint headerLength)
         {
+            if (path == ".Table`1.<GameRound>k__BackingField.TexasHoldemPokerGame.<GamePots>k__BackingField.StandardCard._rank")
+                System.Diagnostics.Debugger.Break();
             var objectFactory = new ObjectFactory();
             dataLength = 0;
             headerLength = 0;
