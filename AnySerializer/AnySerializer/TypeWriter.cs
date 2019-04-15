@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 using TypeSupport;
 using TypeSupport.Extensions;
@@ -52,13 +53,14 @@ namespace AnySerializer
             writer.Write((byte)dataSettings);
 
             var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors, ignorePropertiesOrPaths);
-            typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty);
-
+            typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty, 0);
+            var debug = typeWriter.GetDebug();
             return typeDescriptors;
         }
 
         public TypeWriter(uint maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<object> ignoreAttributes, TypeDescriptors typeDescriptors, ICollection<string> ignorePropertiesOrPaths = null)
         {
+            _debugWriter = new StringBuilder();
             _maxDepth = maxDepth;
             _dataSettings = dataSettings;
             _options = options;
@@ -74,8 +76,37 @@ namespace AnySerializer
             };
         }
 
-        internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path)
+        public string GetDebug()
         {
+            return $"{{\r\n{_debugWriter.ToString()}}}\r\n";
+        }
+
+        private void WriteDebugBuilder(long pos, ExtendedType typeSupport, TypeId typeId, int currentDepth, string path, int index)
+        {
+            if (path.Length > 0)
+            {
+                var pathParts = path.Split(new string[] { "." }, StringSplitOptions.RemoveEmptyEntries);
+                if (pathParts.Length > 0)
+                    _debugWriter.AppendLine($"{(Indent(currentDepth) + pathParts[pathParts.Length - 1])} [{index}] {typeId} {typeSupport.Name} {pos}");
+            }
+        }
+
+        private string Indent(int tabCount)
+        {
+            if (tabCount == 0) return string.Empty;
+            var str = "";
+            for (var i = 0; i < tabCount; i++)
+                str += "  ";
+            return str;
+        }
+
+        internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path, int index)
+        {
+            // if (typeSupport.Name == "StandardCard" || path == ".Table`1.<GameRound>k__BackingField.TexasHoldemPokerGame.<GamePots>k__BackingField.StandardCard._rank")
+            //     System.Diagnostics.Debugger.Break();
+            // increment the current recursion depth
+            currentDepth++;
+
             var isTypeMapped = false;
             TypeId objectTypeId = TypeId.None;
             var newTypeSupport = typeSupport;
@@ -195,6 +226,7 @@ namespace AnySerializer
             {
                 dataLength -= (int)Constants.ObjectTypeDescriptorId;
             }
+            WriteDebugBuilder(writer.BaseStream.Position, typeSupport, objectTypeId, currentDepth, path, index);
             writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
             {
@@ -274,11 +306,13 @@ namespace AnySerializer
 
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             ExtendedType elementConcreteExtendedType = null;
+            var index = 0;
             foreach (var item in array)
             {
                 if (item != null && elementConcreteExtendedType == null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
-                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path);
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path, index);
+                index++;
             }
         }
 
@@ -301,11 +335,13 @@ namespace AnySerializer
 
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             ExtendedType elementConcreteExtendedType = null;
+            var index = 0;
             foreach (var item in enumerable)
             {
                 if (item != null && elementConcreteExtendedType == null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
-                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path);
+                WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path, index);
+                index++;
             }
         }
 
@@ -322,7 +358,7 @@ namespace AnySerializer
             var index = 0;
             foreach (var item in enumerable)
             {
-                WriteObject(writer, item, valueExtendedTypes[index], currentDepth, path);
+                WriteObject(writer, item, valueExtendedTypes[index], currentDepth, path, index);
                 index++;
             }
         }
@@ -335,14 +371,16 @@ namespace AnySerializer
             var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
             var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
             ExtendedType valueConcreteExtendedType = null;
+            var index = 0;
             foreach (DictionaryEntry item in dictionary)
             {
                 // write the key
-                WriteObject(writer, item.Key, keyExtendedType, currentDepth, path);
+                WriteObject(writer, item.Key, keyExtendedType, currentDepth, path, index);
                 // write the value
                 if (item.Value != null && valueConcreteExtendedType == null)
                     valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
-                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
+                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, index);
+                index++;
             }
         }
 
@@ -355,10 +393,10 @@ namespace AnySerializer
             var key = obj.GetPropertyValue("Key");
             var value = obj.GetPropertyValue("Value");
             // write the key
-            WriteObject(writer, key, keyExtendedType, currentDepth, path);
+            WriteObject(writer, key, keyExtendedType, currentDepth, path, 0);
             // write the value
             valueConcreteExtendedType = value?.GetType().GetExtendedType();
-            WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path);
+            WriteObject(writer, value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, 0);
         }
 
         internal void WriteStructType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
@@ -368,6 +406,7 @@ namespace AnySerializer
 
             var rootPath = path;
             var localPath = string.Empty;
+            var index = 0;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
@@ -385,7 +424,8 @@ namespace AnySerializer
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath);
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath, index);
+                index++;
             }
         }
 
@@ -396,6 +436,7 @@ namespace AnySerializer
 
             var rootPath = path;
             var localPath = string.Empty;
+            var index = 0;
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
@@ -413,7 +454,8 @@ namespace AnySerializer
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
 
-                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath);
+                WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath, index);
+                index++;
             }
         }
     }
