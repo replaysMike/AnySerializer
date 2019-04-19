@@ -94,6 +94,9 @@ namespace AnySerializer
             if (path == ".Table`1.<GameRound>k__BackingField.TexasHoldemPokerGame.<GamePots>k__BackingField.StandardCard._rank")
                 System.Diagnostics.Debugger.Break();
             var objectFactory = new ObjectFactory();
+            var arrayDimensions = new List<int>();
+            var arrayRank = 0;
+
             dataLength = 0;
             headerLength = 0;
 
@@ -115,10 +118,10 @@ namespace AnySerializer
             // read the object type
             var objectTypeByte = reader.ReadByte();
             headerLength += Constants.TypeHeaderSize;
-            var objectTypeId = TypeUtil.GetTypeId(objectTypeByte);
-            var isNullValue = TypeUtil.IsNullValue((TypeId)objectTypeByte);
-            var isTypeMapped = TypeUtil.IsTypeMapped((TypeId)objectTypeByte);
             var isTypeDescriptorMap = TypeUtil.IsTypeDescriptorMap((TypeId)objectTypeByte);
+            var isTypeMapped = TypeUtil.IsTypeMapped((TypeId)objectTypeByte);
+            var isNullValue = TypeUtil.IsNullValue((TypeId)objectTypeByte);
+            var objectTypeId = TypeUtil.GetTypeId(objectTypeByte);
 
             // read the length prefix (minus the length field itself)
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
@@ -175,6 +178,18 @@ namespace AnySerializer
             if (_objectReferences.ContainsKey(objectReferenceId))
                 return _objectReferences[objectReferenceId];
 
+            // if it's an array, read it's dimensions before we create a new object for it
+            if (objectTypeId == TypeId.Array)
+            {
+                // number of dimensions
+                arrayRank = reader.ReadInt32();
+                // length of each dimension
+                for (var i = 0; i < arrayRank; i++)
+                {
+                    arrayDimensions.Add(reader.ReadInt32());
+                }
+            }
+
             try
             {
                 if (dataLength == 0)
@@ -202,16 +217,19 @@ namespace AnySerializer
             }
 
             object newObj = null;
+            // for arrays, we need to pass the dimensions of the desired arrays
             var destinationTypeSupport = typeSupport; 
             try
             {
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
                 {
-                    newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
+                    newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, arrayDimensions);
                     destinationTypeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
                 }
                 else
-                    newObj = objectFactory.CreateEmptyObject(destinationTypeSupport.Type, _typeRegistry);
+                {
+                    newObj = objectFactory.CreateEmptyObject(destinationTypeSupport.Type, _typeRegistry, arrayDimensions);
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -328,24 +346,52 @@ namespace AnySerializer
             var listType = typeof(List<>).MakeGenericType(genericType);
             var newList = (IList)Activator.CreateInstance(listType);
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            var array = (Array)newObj;
+            var arrayRank = array.Rank;
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < arrayRank; dimension++)
+            {
+                arrayDimensions.Add(array.GetLength(dimension));
+            }
+
+            var currentDimension = 0;
+            var flatRowIndex = 0;
             while (i < length)
             {
                 var element = ReadObject(reader, elementExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
                 newList.Add(element);
+                var indicies = new List<int>();
+                for(var rank=0; rank < arrayRank; rank++)
+                {
+                    if (flatRowIndex > 0) indicies.Add((int)(flatRowIndex / arrayRank) + (flatRowIndex % arrayRank));
+                    else indicies.Add(0);
+                }
+                // (flatRowIndex / arrayRank) + (flatRowIndex % rank)
+                // 0,0 = 0
+                // 1 / 4 = 
+                // 0,1 = 1 = flatRowIndex / arrayDimensions[0]
+                // 1,0 = 2 = flatRowIndex % rank + 1 % 0 = 1
+                // 1,1 = 3 = flatRowIndex % rank + 1 % 0 = 1
+                // 2,0 = 4 = flatRowIndex % rank + 1 % 0 = 1
+                // 2,1 = 5 = flatRowIndex % rank + 1 % 0 = 1
+                array.SetValue(element, indicies.ToArray());
+                flatRowIndex++;
             }
+            return array;
 
+            /*
             object returnObj = null;
 
-            // return the value
             if (typeDescriptor != null && !string.IsNullOrEmpty(typeDescriptor.FullName))
-                returnObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, length: newList.Count);
+                returnObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, newList.Count);
             else
-                returnObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, length: newList.Count);
+                returnObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, newList.Count);
 
             newList.CopyTo((Array)returnObj, 0);
             return (Array)returnObj;
+            */
         }
 
         internal object ReadEnumerableType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)

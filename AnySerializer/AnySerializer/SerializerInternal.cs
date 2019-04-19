@@ -18,6 +18,11 @@ namespace AnySerializer
     internal sealed class SerializerInternal
     {
         /// <summary>
+        /// Get the diagnostic log
+        /// </summary>
+        public string DiagnosticLog { get; private set; }
+
+        /// <summary>
         /// Create a new serializer
         /// </summary>
         internal SerializerInternal()
@@ -57,7 +62,8 @@ namespace AnySerializer
             {
                 using (var writer = new BinaryWriter(stream))
                 {
-                    typeDescriptors = TypeWriter.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes, ignorePropertiesOrPaths);
+                    typeDescriptors = TypeWriter.Write(writer, sourceObject, typeSupport, maxDepth, options, ignoreAttributes, out var diagnosticLog, ignorePropertiesOrPaths);
+                    DiagnosticLog = diagnosticLog;
                 }
                 dataBytes = stream.ToArray();
                 

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml.Linq;
 using TypeSupport;
 using TypeSupport.Extensions;
@@ -28,10 +27,10 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
-        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
+        internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, out string diagnosticLog, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
-
+            diagnosticLog = string.Empty;
             TypeDescriptors typeDescriptors = null;
             if (options.BitwiseHasFlag(SerializerOptions.EmbedTypes))
                 typeDescriptors = new TypeDescriptors();
@@ -54,13 +53,16 @@ namespace AnySerializer
 
             var typeWriter = new TypeWriter(maxDepth, dataSettings, options, ignoreAttributes, typeDescriptors, ignorePropertiesOrPaths);
             typeWriter.WriteObject(writer, obj, typeSupport, currentDepth, string.Empty, 0);
-            var debug = typeWriter.GetDebug();
+            if (options.BitwiseHasFlag(SerializerOptions.WriteDiagnosticLog))
+            {
+                diagnosticLog = typeWriter.GetDiagnosticLog();
+            }
             return typeDescriptors;
         }
 
         public TypeWriter(uint maxDepth, SerializerDataSettings dataSettings, SerializerOptions options, ICollection<object> ignoreAttributes, TypeDescriptors typeDescriptors, ICollection<string> ignorePropertiesOrPaths = null)
         {
-            _debugWriter = new StringBuilder();
+            _debugWriter = new DebugReportWriter();
             _maxDepth = maxDepth;
             _dataSettings = dataSettings;
             _options = options;
@@ -74,30 +76,6 @@ namespace AnySerializer
                 { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
                 { typeof(XDocument), new Lazy<ICustomSerializer>(() => new XDocumentSerializer()) },
             };
-        }
-
-        public string GetDebug()
-        {
-            return $"{{\r\n{_debugWriter.ToString()}}}\r\n";
-        }
-
-        private void WriteDebugBuilder(long pos, ExtendedType typeSupport, TypeId typeId, int currentDepth, string path, int index)
-        {
-            if (path.Length > 0)
-            {
-                var pathParts = path.Split(new string[] { "." }, StringSplitOptions.RemoveEmptyEntries);
-                if (pathParts.Length > 0)
-                    _debugWriter.AppendLine($"{(Indent(currentDepth) + pathParts[pathParts.Length - 1])} [{index}] {typeId} {typeSupport.Name} {pos}");
-            }
-        }
-
-        private string Indent(int tabCount)
-        {
-            if (tabCount == 0) return string.Empty;
-            var str = "";
-            for (var i = 0; i < tabCount; i++)
-                str += "  ";
-            return str;
         }
 
         internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path, int index)
@@ -155,10 +133,11 @@ namespace AnySerializer
 
             // write the optional type descriptor id - only interfaces can store type descriptors
             var containsTypeDescriptorId = false;
+            ushort typeDescriptorId = 0;
             if (isTypeMapped)
             {
-                var typeId = _typeDescriptors.AddKnownType(newTypeSupport);
-                writer.Write(typeId);
+                typeDescriptorId = _typeDescriptors.AddKnownType(newTypeSupport);
+                writer.Write(typeDescriptorId);
                 containsTypeDescriptorId = true;
             }
 
@@ -226,7 +205,7 @@ namespace AnySerializer
             {
                 dataLength -= (int)Constants.ObjectTypeDescriptorId;
             }
-            WriteDebugBuilder(writer.BaseStream.Position, typeSupport, objectTypeId, currentDepth, path, index);
+            WriteDebugBuilder(writer.BaseStream.Position, typeSupport, objectTypeId, currentDepth, path, index, dataLength, objectReferenceId, typeDescriptorId, hashCode);
             writer.Seek((int)lengthStartPosition, SeekOrigin.Begin);
             if (_dataSettings.BitwiseHasFlag(SerializerDataSettings.Compact))
             {
@@ -302,12 +281,25 @@ namespace AnySerializer
         internal void WriteArrayType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
         {
             // write each element
-            var array = (IEnumerable)obj;
+            var arrayEnumerable = (IEnumerable)obj;
+            var array = (Array)obj;
 
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             ExtendedType elementConcreteExtendedType = null;
             var index = 0;
-            foreach (var item in array)
+            // calculate the dimensions of the array
+            var rank = array.Rank;
+            // write out the total number of dimensions
+            writer.Write(rank);
+            // write the length of each dimension
+            for (var i = 0; i < rank; i++)
+            {
+                var dimensionSize = array.GetLength(i);
+                writer.Write(dimensionSize);
+            }
+            // this will flatten a multidimensional array into a single list of values
+            // we will need to know the dimensions (above) in order to restore it
+            foreach (var item in arrayEnumerable)
             {
                 if (item != null && elementConcreteExtendedType == null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
@@ -457,6 +449,21 @@ namespace AnySerializer
                 WriteObject(writer, fieldValue, fieldExtendedType, currentDepth, localPath, index);
                 index++;
             }
+        }
+
+        /// <summary>
+        /// Get the diagnostic log
+        /// </summary>
+        /// <returns></returns>
+        public string GetDiagnosticLog()
+        {
+            return _debugWriter.ToString();
+        }
+
+        private void WriteDebugBuilder(long pos, ExtendedType typeSupport, TypeId typeId, int currentDepth, string path, int index, int dataLength, ushort objectReferenceId, ushort typeDescriptorId, int hashCode)
+        {
+            if (_options.BitwiseHasFlag(SerializerOptions.WriteDiagnosticLog))
+                _debugWriter.WriteLine(pos, typeSupport, typeId, currentDepth, path, index, dataLength, objectReferenceId, typeDescriptorId, hashCode);
         }
     }
 }

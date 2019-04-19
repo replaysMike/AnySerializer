@@ -21,6 +21,11 @@ namespace AnySerializer
         private readonly DeserializerInternal _deserializer;
         private readonly ValidatorInternal _validator;
 
+        /// <summary>
+        /// Get the diagnostic log
+        /// </summary>
+        public string DiagnosticLog => _serializer?.DiagnosticLog;
+
         public SerializerProvider()
         {
             _serializer = new SerializerInternal();
