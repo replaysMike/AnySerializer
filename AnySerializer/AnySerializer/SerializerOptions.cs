@@ -32,5 +32,9 @@ namespace AnySerializer
         /// Specify to compress the binary serialized data
         /// </summary>
         Compress = 8,
+        /// <summary>
+        /// Specify to write a diagnostic log for writing serialized data
+        /// </summary>
+        WriteDiagnosticLog = 16,
     }
 }

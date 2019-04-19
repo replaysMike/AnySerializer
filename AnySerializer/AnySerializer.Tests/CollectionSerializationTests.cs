@@ -27,6 +27,24 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldSerialize_MultidimensionalArrayOfInts()
+        {
+            var test = new int[2, 4] { { 0x01, 0x02, 0x03, 0x04 }, { 0x05, 0x06, 0x07, 0x08 } };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+
+            Assert.NotNull(bytes);
+            // should be equal to the size header + serialized object size
+            var expectedSize = Constants.DataSettingsSize + Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + (
+                (test.Length *
+                (
+                    Constants.TypeHeaderSize + Constants.LengthHeaderSize + Constants.ObjectReferenceIdSize + sizeof(int)) /*valuesize*/
+                )
+            );
+            Assert.AreEqual(expectedSize, bytes.Length);
+        }
+
+        [Test]
         public void ShouldSerialize_ListOfInts()
         {
             var test = new List<int> { 1, 2, 3, 4 };

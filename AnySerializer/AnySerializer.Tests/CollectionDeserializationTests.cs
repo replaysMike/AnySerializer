@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using TypeSupport;
 
 namespace AnySerializer.Tests
 {
@@ -11,12 +12,43 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldDeserialize_ArrayOfInts()
         {
-            var test = new int[4] { 1, 2, 3, 4 };
+            var test = new int[] { 1, 2, 3, 4 };
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);
             var deserializedTest = provider.Deserialize<int[]>(bytes);
 
             CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_MultidimensionalArrayOfInts()
+        {
+            var array2Da = new int[4, 2] { 
+                { 1, 2 },
+                { 3, 4 },
+                { 5, 6 },
+                { 7, 8 }
+            };
+            var objectFactory = new ObjectFactory();
+            var dimensions = new List<object> { 4, 2 };
+            var newArray2Da = objectFactory.CreateEmptyObject<int[,]>(dimensions);
+            var t = newArray2Da.Rank;
+            var array3Da = new int[2, 2, 3] { 
+                { { 1, 2, 3 }, { 4, 5, 6 } }, { { 7, 8, 9 }, { 10, 11, 12 } }
+            };
+            var tr = array2Da.Rank; // dimensions (number of ,) = 2
+            var tr1 = array2Da.GetLength(0); // 4
+            var tr2 = array2Da.GetLength(1); // 2
+            var r = array3Da.Rank; // dimensions (number of ,) = 3
+            var r1 = array3Da.GetLength(0); // 2
+            var r2 = array3Da.GetLength(1); // 2
+            var r3 = array3Da.GetLength(2); // 3
+
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(array2Da, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var deserializedTest = provider.Deserialize<int[,]>(bytes);
+
+            CollectionAssert.AreEqual(array2Da, deserializedTest);
         }
 
         [Test]

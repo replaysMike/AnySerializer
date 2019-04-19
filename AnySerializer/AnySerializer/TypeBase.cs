@@ -17,7 +17,7 @@ namespace AnySerializer
         protected IDictionary<Type, Lazy<ICustomSerializer>> _customSerializers;
         protected ICollection<object> _ignoreAttributes;
         protected ICollection<string> _ignorePropertiesOrPaths;
-        protected StringBuilder _debugWriter;
+        protected DebugReportWriter _debugWriter;
 
         /// <summary>
         /// Returns true if object name should be ignored
