@@ -117,12 +117,9 @@ namespace AnySerializer.Tests
                 { 5, 6 },
                 { 7, 8 }
             };
-            var arrayDimensions = new List<int>();
-            for (var dimension = 0; dimension < array.Rank; dimension++)
-                arrayDimensions.Add(array.GetLength(dimension));
 
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes);
             var deserializedTest = provider.Deserialize<int[,]>(bytes);
 
             CollectionAssert.AreEqual(array, deserializedTest);
@@ -137,12 +134,9 @@ namespace AnySerializer.Tests
                 // row 2
                 { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } }
             };
-            var arrayDimensions = new List<int>();
-            for (var dimension = 0; dimension < array.Rank; dimension++)
-                arrayDimensions.Add(array.GetLength(dimension));
 
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes);
             var deserializedTest = provider.Deserialize<int[,,]>(bytes);
 
             CollectionAssert.AreEqual(array, deserializedTest);
@@ -157,12 +151,9 @@ namespace AnySerializer.Tests
                 // row 2
                 { { { 9, 10 }, { 11, 12 } }, { { 13, 14 }, { 15, 16 } } },
             };
-            var arrayDimensions = new List<int>();
-            for (var dimension = 0; dimension < array.Rank; dimension++)
-                arrayDimensions.Add(array.GetLength(dimension));
 
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes);
             var deserializedTest = provider.Deserialize<int[,,,]>(bytes);
 
             CollectionAssert.AreEqual(array, deserializedTest);
@@ -177,12 +168,9 @@ namespace AnySerializer.Tests
                 new int[] { 5, 6 },
                 new int[] { 7, 8 }
             };
-            var arrayDimensions = new List<int>();
-            for (var dimension = 0; dimension < array.Rank; dimension++)
-                arrayDimensions.Add(array.GetLength(dimension));
 
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes);
             var deserializedTest = provider.Deserialize<int[][]>(bytes);
 
             CollectionAssert.AreEqual(array, deserializedTest);
