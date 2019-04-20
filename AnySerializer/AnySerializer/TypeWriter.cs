@@ -288,13 +288,13 @@ namespace AnySerializer
             ExtendedType elementConcreteExtendedType = null;
             var index = 0;
             // calculate the dimensions of the array
-            var rank = array.Rank;
+            var rank = (uint)array.Rank;
             // write out the total number of dimensions
             writer.Write(rank);
             // write the length of each dimension
             for (var i = 0; i < rank; i++)
             {
-                var dimensionSize = array.GetLength(i);
+                var dimensionSize = (uint)array.GetLength(i);
                 writer.Write(dimensionSize);
             }
             // this will flatten a multidimensional array into a single list of values
