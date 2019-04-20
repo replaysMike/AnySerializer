@@ -144,15 +144,21 @@ namespace AnySerializer
             // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
             // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
             ushort objectReferenceId = 0;
+            bool alreadyMapped = false;
             var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
-            var alreadyMapped = _referenceTracker.ContainsHashcode(hashCode);
-            // if we already wrote this object, we want to write a reference to it in the data
-            if (alreadyMapped)
-                objectReferenceId = _referenceTracker.GetObjectReferenceId(hashCode);
+            if (obj != null && !_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking)) {
+                alreadyMapped = _referenceTracker.ContainsHashcode(hashCode, obj.GetType());
+                // if we already wrote this object, we want to write a reference to it in the data
+                if (alreadyMapped)
+                    objectReferenceId = _referenceTracker.GetObjectReferenceId(hashCode, obj.GetType());
+            }
             if (hashCode != 0 && !alreadyMapped)
             {
-                // ensure we can refer back to the reference for this object
-                objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
+                if (!_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking))
+                {
+                    // ensure we can refer back to the reference for this object
+                    objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
+                }
 
                 // custom types support
                 var @switch = new Dictionary<Type, Action>

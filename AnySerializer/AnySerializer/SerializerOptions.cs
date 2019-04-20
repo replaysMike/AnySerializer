@@ -36,5 +36,9 @@ namespace AnySerializer
         /// Specify to write a diagnostic log for writing serialized data
         /// </summary>
         WriteDiagnosticLog = 16,
+        /// <summary>
+        /// Specify to disable automatic reference tracking
+        /// </summary>
+        DisableReferenceTracking = 32,
     }
 }

@@ -33,19 +33,31 @@ namespace AnySerializer
         /// </summary>
         /// <param name="hashCode"></param>
         /// <returns></returns>
-        public bool ContainsHashcode(int hashCode)
+        public bool ContainsHashcode(int hashCode, Type objectType)
         {
-            return _objectTree.ContainsKey(hashCode);
+            var containsKey = _objectTree.ContainsKey(hashCode);
+            if (containsKey)
+            {
+                var reference = _objectTree[hashCode];
+                return reference.Object.GetType() == objectType;
+            }
+            return false;
         }
 
         /// <summary>
         /// Get the reference id based on the tracked objects hashCode
         /// </summary>
-        /// <param name="hashCode"></param>
+        /// <param name="hashCode">The object's hashcode</param>
+        /// <param name="type">The object's type</param>
         /// <returns></returns>
-        public ushort GetObjectReferenceId(int hashCode)
+        public ushort GetObjectReferenceId(int hashCode, Type type)
         {
-            return _objectTree[hashCode].ReferenceId;
+            var reference = _objectTree[hashCode];
+            if (reference.Object.GetType() == type)
+            {
+                return reference.ReferenceId;
+            }
+            throw new InvalidOperationException($"Hashcode '{hashCode}' and type '{type.Name}' not found.");
         }
 
         /// <summary>
@@ -56,6 +68,19 @@ namespace AnySerializer
         public object GetObject(int hashCode)
         {
             return _objectTree[hashCode].Object;
+        }
+
+        /// <summary>
+        /// Get an object from a tracked hashcode
+        /// </summary>
+        /// <param name="hashCode"></param>
+        /// <returns></returns>
+        public object GetObject(int hashCode, Type type)
+        {
+            var reference = _objectTree[hashCode];
+            if (reference.Object.GetType() == type)
+                return reference.Object;
+            return null;
         }
 
         public override int GetHashCode()

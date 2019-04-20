@@ -173,8 +173,28 @@ namespace AnySerializer
                 return null;
 
             // do we already have this object as a reference?
-            if (_objectReferences.ContainsKey(objectReferenceId))
-                return _objectReferences[objectReferenceId];
+            if (!_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking))
+            {
+                if (_objectReferences.ContainsKey(objectReferenceId))
+                {
+                    var reference = _objectReferences[objectReferenceId];
+                    if (reference != null)
+                    {
+                        // if the types are a match, allow using it as a reference
+                        var referenceType = reference.GetType();
+                        if (typeDescriptor != null)
+                        {
+                            var typeDescriptorType = Type.GetType(typeDescriptor.FullName);
+                            if (referenceType == typeDescriptorType)
+                                return reference;
+                        } else
+                        {
+                            if (referenceType == typeSupport.Type)
+                                return reference;
+                        }
+                    }
+                }
+            }
 
             // if it's an array, read it's dimensions before we create a new object for it
             uint arrayStartPosition = 0;
