@@ -1,7 +1,9 @@
 ﻿using AnySerializer.Tests.TestObjects;
 using NUnit.Framework;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using TypeSupport;
 
 namespace AnySerializer.Tests
@@ -19,36 +21,171 @@ namespace AnySerializer.Tests
 
             CollectionAssert.AreEqual(test, deserializedTest);
         }
-
+        
         [Test]
-        public void ShouldDeserialize_MultidimensionalArrayOfInts()
+        [Ignore("This is for understanding how multi-dimensional arrays can be reconstructed")]
+        public void Test_MultidimensionalArrayOfInts()
         {
-            var array2Da = new int[4, 2] { 
+            /*var array = new int[4]
+            {
+                1,2,3,4
+            };*/
+            var array = new int[4, 2] {
                 { 1, 2 },
                 { 3, 4 },
                 { 5, 6 },
                 { 7, 8 }
             };
-            var objectFactory = new ObjectFactory();
-            var dimensions = new List<object> { 4, 2 };
-            var newArray2Da = objectFactory.CreateEmptyObject<int[,]>(dimensions);
-            var t = newArray2Da.Rank;
-            var array3Da = new int[2, 2, 3] { 
-                { { 1, 2, 3 }, { 4, 5, 6 } }, { { 7, 8, 9 }, { 10, 11, 12 } }
+            /*var array = new int[2, 3, 3] {
+                // row 1
+                { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                // row 2
+                { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } }
+            };*/
+
+            /*var array = new int[2, 2, 2, 2] {
+                // row 1
+                { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } },
+                // row 2
+                { { { 9, 10 }, { 11, 12 } }, { { 13, 14 }, { 15, 16 } } },
+            };*/
+            /*var array = new int[2, 2, 2, 2, 2] {
+                // row 1
+                { { { { 1, 2 }, { 3, 4} }, { { 5, 6 }, { 7, 8 } } }, { { { 9, 10 }, { 11, 12 } }, { { 13, 14 }, { 15, 16 } } } },
+                // row 2
+                { { { { 17, 18 }, { 19, 20} }, { { 21, 22 }, { 23, 24 } } }, { { { 25, 26 }, { 27, 28 } }, { { 29, 30 }, { 31, 32 } } } },
+            };*/
+            var arrayRank = array.Rank;
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < arrayRank; dimension++)
+                arrayDimensions.Add(array.GetLength(dimension));
+            var i = 0;
+            foreach (var val in array)
+            {
+                var indicies = new List<int>();
+                var indicies2 = new List<int>();
+                indicies.Add(i % arrayDimensions[arrayRank - 1]);
+                // populate indicies2 based on a formula derived from the logic below which populates indicies.
+                // the results should match
+                for (var r = 1; r <= arrayRank; r++)
+                {
+                    var multi = 1;
+                    for (var p = 1; p < r; p++)
+                    {
+                        multi *= arrayDimensions[arrayRank - p];
+                    }
+                    var b = (i / multi) % arrayDimensions[arrayRank - r];
+                    indicies2.Add(b);
+                }
+
+                if (arrayRank >= 2)
+                {
+                    indicies.Add((i / arrayDimensions[arrayRank - 1]) % arrayDimensions[arrayRank - 2]);
+                }
+                if (arrayRank >= 3)
+                {
+                    indicies.Add((i / (arrayDimensions[arrayRank - 1] * arrayDimensions[arrayRank - 2])) % arrayDimensions[arrayRank - 3]);
+                }
+                if (arrayRank >= 4)
+                {
+                    indicies.Add((i / (arrayDimensions[arrayRank - 1] * arrayDimensions[arrayRank - 2] * arrayDimensions[arrayRank - 3])) % arrayDimensions[arrayRank - 4]);
+                }
+                if (arrayRank >= 5)
+                {
+                    indicies.Add((i / (arrayDimensions[arrayRank - 1] * arrayDimensions[arrayRank - 2] * arrayDimensions[arrayRank - 3] * arrayDimensions[arrayRank - 4])) % arrayDimensions[arrayRank - 5]);
+                }
+                if (arrayRank >= 6)
+                {
+                    indicies.Add((i / (arrayDimensions[arrayRank - 1] * arrayDimensions[arrayRank - 2] * arrayDimensions[arrayRank - 3] * arrayDimensions[arrayRank - 4] * arrayDimensions[arrayRank - 5])) % arrayDimensions[arrayRank - 6]);
+                }
+                indicies.Reverse();
+                indicies2.Reverse();
+                var v = array.GetValue(indicies.ToArray());
+                var v2 = array.GetValue(indicies2.ToArray());
+                Debug.WriteLine($"({string.Join(",", indicies)}) = {v} ({i})");
+                Debug.WriteLine($"({string.Join(",", indicies2)}) = {v2} ({i})");
+                i++;
+            }
+        }
+
+        [Test]
+        public void ShouldDeserialize_2dMultidimensionalArrayOfInts()
+        {
+            var array = new int[4, 2] {
+                { 1, 2 },
+                { 3, 4 },
+                { 5, 6 },
+                { 7, 8 }
             };
-            var tr = array2Da.Rank; // dimensions (number of ,) = 2
-            var tr1 = array2Da.GetLength(0); // 4
-            var tr2 = array2Da.GetLength(1); // 2
-            var r = array3Da.Rank; // dimensions (number of ,) = 3
-            var r1 = array3Da.GetLength(0); // 2
-            var r2 = array3Da.GetLength(1); // 2
-            var r3 = array3Da.GetLength(2); // 3
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < array.Rank; dimension++)
+                arrayDimensions.Add(array.GetLength(dimension));
 
             var provider = new SerializerProvider();
-            var bytes = provider.Serialize(array2Da, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
             var deserializedTest = provider.Deserialize<int[,]>(bytes);
 
-            CollectionAssert.AreEqual(array2Da, deserializedTest);
+            CollectionAssert.AreEqual(array, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_3dMultidimensionalArrayOfInts()
+        {
+            var array = new int[2, 3, 3] {
+                // row 1
+                { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } },
+                // row 2
+                { { 10, 11, 12 }, { 13, 14, 15 }, { 16, 17, 18 } }
+            };
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < array.Rank; dimension++)
+                arrayDimensions.Add(array.GetLength(dimension));
+
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var deserializedTest = provider.Deserialize<int[,,]>(bytes);
+
+            CollectionAssert.AreEqual(array, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_4dMultidimensionalArrayOfInts()
+        {
+            var array = new int[2, 2, 2, 2] {
+                // row 1
+                { { { 1, 2 }, { 3, 4 } }, { { 5, 6 }, { 7, 8 } } },
+                // row 2
+                { { { 9, 10 }, { 11, 12 } }, { { 13, 14 }, { 15, 16 } } },
+            };
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < array.Rank; dimension++)
+                arrayDimensions.Add(array.GetLength(dimension));
+
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var deserializedTest = provider.Deserialize<int[,,,]>(bytes);
+
+            CollectionAssert.AreEqual(array, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_JaggedArrayOfInts()
+        {
+            var array = new int[][] {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 },
+                new int[] { 5, 6 },
+                new int[] { 7, 8 }
+            };
+            var arrayDimensions = new List<int>();
+            for (var dimension = 0; dimension < array.Rank; dimension++)
+                arrayDimensions.Add(array.GetLength(dimension));
+
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(array, SerializerOptions.EmbedTypes | SerializerOptions.WriteDiagnosticLog);
+            var deserializedTest = provider.Deserialize<int[][]>(bytes);
+
+            CollectionAssert.AreEqual(array, deserializedTest);
         }
 
         [Test]

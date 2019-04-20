@@ -91,8 +91,6 @@ namespace AnySerializer
         /// <returns></returns>
         internal object ReadObject(BinaryReader reader, ExtendedType typeSupport, int currentDepth, string path, ref uint dataLength, ref uint headerLength)
         {
-            if (path == ".Table`1.<GameRound>k__BackingField.TexasHoldemPokerGame.<GamePots>k__BackingField.StandardCard._rank")
-                System.Diagnostics.Debugger.Break();
             var objectFactory = new ObjectFactory();
             var arrayDimensions = new List<int>();
             var arrayRank = 0;
@@ -179,14 +177,17 @@ namespace AnySerializer
                 return _objectReferences[objectReferenceId];
 
             // if it's an array, read it's dimensions before we create a new object for it
+            uint arrayStartPosition = 0;
             if (objectTypeId == TypeId.Array)
             {
                 // number of dimensions
-                arrayRank = reader.ReadInt32();
+                arrayRank = (int)reader.ReadUInt32();
+                arrayStartPosition += sizeof(uint);
                 // length of each dimension
                 for (var i = 0; i < arrayRank; i++)
                 {
-                    arrayDimensions.Add(reader.ReadInt32());
+                    arrayDimensions.Add((int)reader.ReadUInt32());
+                    arrayStartPosition += sizeof(uint);
                 }
             }
 
@@ -256,7 +257,7 @@ namespace AnySerializer
                         newObj = ReadStructType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.Array:
-                        newObj = ReadArrayType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
+                        newObj = ReadArrayType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor, arrayStartPosition);
                         break;
                     case TypeId.IDictionary:
                         newObj = ReadDictionaryType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
@@ -335,63 +336,54 @@ namespace AnySerializer
             }
         }
 
-        internal Array ReadArrayType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
+        internal Array ReadArrayType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor, uint arrayStartPosition)
         {
             // length = entire collection
-            // read each element
-            uint i = 0;
+            // read each element, starting from the position after the rank/dimension information is read
+            uint i = arrayStartPosition;
             uint dataLength = 0;
             uint headerLength = 0;
-            var genericType = typeSupport.ElementType;
-            var listType = typeof(List<>).MakeGenericType(genericType);
-            var newList = (IList)Activator.CreateInstance(listType);
             var elementExtendedType = new ExtendedType(typeSupport.ElementType);
             var array = (Array)newObj;
             var arrayRank = array.Rank;
             var arrayDimensions = new List<int>();
             for (var dimension = 0; dimension < arrayRank; dimension++)
-            {
                 arrayDimensions.Add(array.GetLength(dimension));
-            }
-
-            var currentDimension = 0;
             var flatRowIndex = 0;
+
             while (i < length)
             {
                 var element = ReadObject(reader, elementExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                newList.Add(element);
-                var indicies = new List<int>();
-                for(var rank=0; rank < arrayRank; rank++)
+                // performance optimization, skip dimensional processing if it's a 1d array
+                if (arrayRank > 1)
                 {
-                    if (flatRowIndex > 0) indicies.Add((int)(flatRowIndex / arrayRank) + (flatRowIndex % arrayRank));
-                    else indicies.Add(0);
+                    // this is an optimized multi-dimensional array reconstruction
+                    // based on the formula: indicies.Add((i / (arrayDimensions[arrayRank - 1] * arrayDimensions[arrayRank - 2] * arrayDimensions[arrayRank - 3] * arrayDimensions[arrayRank - 4] * arrayDimensions[arrayRank - 5])) % arrayDimensions[arrayRank - 6]);
+                    var indicies = new List<int>();
+                    for (var r = 1; r <= arrayRank; r++)
+                    {
+                        var multi = 1;
+                        for (var p = 1; p < r; p++)
+                        {
+                            multi *= arrayDimensions[arrayRank - p];
+                        }
+                        var b = (flatRowIndex / multi) % arrayDimensions[arrayRank - r];
+                        indicies.Add(b);
+                    }
+                    indicies.Reverse();
+                    // set element of multi-dimensional array
+                    array.SetValue(element, indicies.ToArray());
                 }
-                // (flatRowIndex / arrayRank) + (flatRowIndex % rank)
-                // 0,0 = 0
-                // 1 / 4 = 
-                // 0,1 = 1 = flatRowIndex / arrayDimensions[0]
-                // 1,0 = 2 = flatRowIndex % rank + 1 % 0 = 1
-                // 1,1 = 3 = flatRowIndex % rank + 1 % 0 = 1
-                // 2,0 = 4 = flatRowIndex % rank + 1 % 0 = 1
-                // 2,1 = 5 = flatRowIndex % rank + 1 % 0 = 1
-                array.SetValue(element, indicies.ToArray());
+                else
+                {
+                    // set element of 1d array
+                    array.SetValue(element, flatRowIndex);
+                }
                 flatRowIndex++;
             }
             return array;
-
-            /*
-            object returnObj = null;
-
-            if (typeDescriptor != null && !string.IsNullOrEmpty(typeDescriptor.FullName))
-                returnObj = new ObjectFactory().CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, newList.Count);
-            else
-                returnObj = new ObjectFactory().CreateEmptyObject(typeSupport.Type, _typeRegistry, newList.Count);
-
-            newList.CopyTo((Array)returnObj, 0);
-            return (Array)returnObj;
-            */
         }
 
         internal object ReadEnumerableType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
