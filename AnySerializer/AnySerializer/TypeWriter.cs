@@ -157,7 +157,7 @@ namespace AnySerializer
                 if (!_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking))
                 {
                     // ensure we can refer back to the reference for this object
-                    objectReferenceId = _referenceTracker.AddObject(obj, hashCode);
+                    objectReferenceId = _referenceTracker.AddObject(hashCode, obj);
                 }
 
                 // custom types support
