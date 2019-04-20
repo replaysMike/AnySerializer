@@ -15,7 +15,7 @@ namespace AnySerializer.Tests
 #if FEATURE_COMPRESSION
             Assert.Less(bytes.Length, 250);
 #else
-            Assert.Less(bytes.Length, 800);
+            Assert.Less(bytes.Length, 1000);
 #endif
         }
 
