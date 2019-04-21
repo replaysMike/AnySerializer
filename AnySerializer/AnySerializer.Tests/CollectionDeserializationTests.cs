@@ -257,6 +257,20 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldDeserialize_CustomWrappedCollection()
+        {
+            // this is an oddball case but we will support it!
+            var test = new CustomWrappedCollection<string>();
+            test.Add(new GenericObject<string>("test 1"));
+            test.Add(new GenericObject<string>("test 2"));
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<CustomWrappedCollection<string>>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
         public void ShouldDeserialize_KeyValuePair()
         {
             var test = new KeyValuePair<int, string>(100, "Test");

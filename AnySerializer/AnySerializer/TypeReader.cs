@@ -187,7 +187,8 @@ namespace AnySerializer
                             var typeDescriptorType = Type.GetType(typeDescriptor.FullName);
                             if (referenceType == typeDescriptorType)
                                 return reference;
-                        } else
+                        }
+                        else
                         {
                             if (referenceType == typeSupport.Type)
                                 return reference;
@@ -239,7 +240,7 @@ namespace AnySerializer
 
             object newObj = null;
             // for arrays, we need to pass the dimensions of the desired arrays
-            var destinationTypeSupport = typeSupport; 
+            var destinationTypeSupport = typeSupport;
             try
             {
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
@@ -414,10 +415,25 @@ namespace AnySerializer
             uint dataLength = 0;
             uint headerLength = 0;
 
-            var genericType = typeSupport.Type.GetGenericArguments().First();           
-            var genericExtendedType = new ExtendedType(genericType);
+            // determine what this enumerable enumerates (it's not necessarily the generic argument of the class)
+            Type genericType;
+            ExtendedType genericExtendedType;
+            // if it's a custom class that implements IEnumerable generically, get it's type argument
+            var enumerableInterface = typeSupport.Interfaces.Where(x => x.IsGenericType && x.Name == "IEnumerable`1").FirstOrDefault();
+            if (enumerableInterface != null)
+            {
+                genericType = enumerableInterface.GetGenericArguments().FirstOrDefault();
+                genericExtendedType = new ExtendedType(genericType);
+            }
+            else
+            {
+                // use the generic type from the class directly
+                genericType = typeSupport.Type.GetGenericArguments().First();
+                genericExtendedType = new ExtendedType(genericType);
+            }
+
             var addMethod = typeSupport.Type.GetMethod("Add");
-            if(addMethod == null)
+            if (addMethod == null)
                 addMethod = typeSupport.Type.GetMethod("Push");
             if (addMethod == null)
                 addMethod = typeSupport.Type.GetMethod("Enqueue");
@@ -429,7 +445,7 @@ namespace AnySerializer
                 var element = ReadObject(reader, genericExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
                 i += dataLength + headerLength;
-                addMethod.Invoke(newObj, new [] { element });
+                addMethod.Invoke(newObj, new[] { element });
             }
             return newObj;
         }
@@ -498,7 +514,7 @@ namespace AnySerializer
             }
 
             // special case for concurrent dictionaries
-            if(typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+            if (typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
             {
                 dictionaryType = typeof(ConcurrentDictionary<,>).MakeGenericType(typeArgs);
                 var newConcurrentDictionary = Activator.CreateInstance(dictionaryType, new object[] { newDictionary }) as IDictionary;
