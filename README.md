@@ -37,7 +37,7 @@ Ignoring fields/properties is as easy as using any of the following standard ign
 
 ### Providing custom type mappings
 
-If you find you need to map interfaces to concrete types that are contained in different assemblies, you can add add custom type mappings:
+If you find you need to map interfaces to concrete types that are contained in different assemblies, you can add custom type mappings:
 
 ```csharp
 var originalObject = new SomeComplexTypeWithDeepStructure();
