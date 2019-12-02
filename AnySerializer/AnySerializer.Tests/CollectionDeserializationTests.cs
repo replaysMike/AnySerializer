@@ -1,6 +1,7 @@
 ﻿using AnySerializer.Tests.TestObjects;
 using NUnit.Framework;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -278,6 +279,24 @@ namespace AnySerializer.Tests
             var bytes = provider.Serialize(test);
             var deserializedTest = provider.Deserialize<KeyValuePair<int, string>>(bytes);
 
+            Assert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_EmptyHashtable()
+        {
+            var hashTable = new Hashtable();
+            var bytes = Serializer.Serialize(hashTable);
+            Assert.AreEqual(8, bytes.Length);
+        }
+
+        [Test]
+        public void ShouldDeserialize_Hashtable()
+        {
+            var test = new Hashtable { { 5, "Test" }, { 7, "Another test" } };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<Hashtable>(bytes);
             Assert.AreEqual(test, deserializedTest);
         }
     }

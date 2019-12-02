@@ -367,7 +367,10 @@ namespace AnySerializer
             var dictionary = (IDictionary)obj;
 
             var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
-            var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
+            var valueExtendedType = typeof(object).GetExtendedType();
+            // may not have a value if it's a Hashtable type
+            if (typeSupport.GenericArgumentTypes.Count > 1)
+                valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
             ExtendedType valueConcreteExtendedType = null;
             var index = 0;
             foreach (DictionaryEntry item in dictionary)
