@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using AnySerializer.Tests.TestObjects;
 using NUnit.Framework;
@@ -244,6 +245,17 @@ namespace AnySerializer.Tests
         }
 
         [Test]
+        public void ShouldDeserialize_Empty_NonGenericDictionary()
+        {
+            var test = new NonGenericDictionary();
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<NonGenericDictionary>(bytes);
+
+            CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
         public void ShouldDeserialize_CustomCollectionWithIndexer()
         {
             var test = new CustomCollectionObject(100, 200);
@@ -290,6 +302,30 @@ namespace AnySerializer.Tests
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);
             var deserializedTest = provider.Deserialize<KeyValuePair<int, string>>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_Hashtable()
+        {
+            var test = new Hashtable();
+            test.Add("test", 100);
+            test.Add(200, 3.14d);
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<Hashtable>(bytes);
+
+            Assert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_Empty_Hashtable()
+        {
+            var test = new Hashtable();
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<Hashtable>(bytes);
 
             Assert.AreEqual(test, deserializedTest);
         }
