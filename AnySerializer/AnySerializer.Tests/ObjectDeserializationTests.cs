@@ -250,5 +250,16 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, testDeserialized);
         }
+
+        [Test]
+        public void ShouldDeserialize_StaticInterfaceProperties()
+        {
+            var test = new StaticTypeImplementation("Test name");
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var testDeserialized = provider.Deserialize<StaticTypeImplementation>(bytes);
+
+            Assert.AreEqual(test, testDeserialized);
+        }
     }
 }
