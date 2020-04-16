@@ -365,6 +365,13 @@ namespace AnySerializer
             // write each element
             var dictionary = (IDictionary)obj;
 
+            // determine the generic iterator type
+            var isDictionaryEntry = dictionary.OfType<DictionaryEntry>().Any();
+            var isKvp = dictionary.OfType<KeyValuePair<object, object>>().Any();
+            // if neither was determined (possibly because of no data) assume DictionaryEntry
+            if (!isDictionaryEntry && !isKvp)
+                isDictionaryEntry = true;
+
             if (typeSupport.IsGeneric && typeSupport.GenericArgumentTypes.Any())
             {
                 // generic IDictionary<,>
@@ -372,15 +379,23 @@ namespace AnySerializer
                 var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
                 ExtendedType valueConcreteExtendedType = null;
                 var index = 0;
-                foreach (DictionaryEntry item in dictionary)
+                if (isDictionaryEntry)
                 {
-                    // write the key
-                    WriteObject(writer, item.Key, keyExtendedType, currentDepth, path, index);
-                    // write the value
-                    if (item.Value != null && valueConcreteExtendedType is null)
-                        valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
-                    WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, index);
-                    index++;
+                    // iterate DictionaryEntry of objects
+                    foreach (DictionaryEntry item in dictionary)
+                    {
+                        // write the key
+                        WriteObject(writer, item.Key, keyExtendedType, currentDepth, path, index);
+                        // write the value
+                        if (item.Value != null && valueConcreteExtendedType is null)
+                            valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
+                        WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, index);
+                        index++;
+                    }
+                }
+                else if (isKvp)
+                {
+                    // this scenario isn't supported. Shouldn't be possible when using generics
                 }
             }
             else
@@ -392,13 +407,30 @@ namespace AnySerializer
                 else
                     extendedType = typeof(object).GetExtendedType();
                 var index = 0;
-                foreach (KeyValuePair<object, object> item in dictionary)
+
+                if (isDictionaryEntry)
                 {
-                    // write the key
-                    WriteObject(writer, item.Key, item.Key.GetExtendedType(), currentDepth, path, index);
-                    // write the value
-                    WriteObject(writer, item.Value, item.Value.GetExtendedType(), currentDepth, path, index);
-                    index++;
+                    // iterate DictionaryEntry of objects
+                    foreach (DictionaryEntry item in dictionary)
+                    {
+                        // write the key
+                        WriteObject(writer, item.Key, item.Key.GetExtendedType(), currentDepth, path, index);
+                        // write the value
+                        WriteObject(writer, item.Value, item.Value.GetExtendedType(), currentDepth, path, index);
+                        index++;
+                    }
+                }
+                else if (isKvp)
+                {
+                    // iterate KeyValuePair of objects
+                    foreach (KeyValuePair<object, object> item in dictionary)
+                    {
+                        // write the key
+                        WriteObject(writer, item.Key, item.Key.GetExtendedType(), currentDepth, path, index);
+                        // write the value
+                        WriteObject(writer, item.Value, item.Value.GetExtendedType(), currentDepth, path, index);
+                        index++;
+                    }
                 }
             }
 
