@@ -80,8 +80,6 @@ namespace AnySerializer
 
         internal long WriteObject(BinaryWriter writer, object obj, ExtendedType typeSupport, int currentDepth, string path, int index)
         {
-            // if (typeSupport.Name == "StandardCard" || path == ".Table`1.<GameRound>k__BackingField.TexasHoldemPokerGame.<GamePots>k__BackingField.StandardCard._rank")
-            //     System.Diagnostics.Debugger.Break();
             // increment the current recursion depth
             currentDepth++;
 
@@ -146,7 +144,8 @@ namespace AnySerializer
             ushort objectReferenceId = 0;
             bool alreadyMapped = false;
             var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
-            if (obj != null && !_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking)) {
+            if (obj != null && !_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking))
+            {
                 alreadyMapped = _referenceTracker.ContainsHashcode(hashCode, obj.GetType());
                 // if we already wrote this object, we want to write a reference to it in the data
                 if (alreadyMapped)
@@ -263,7 +262,7 @@ namespace AnySerializer
                             }
                         },
                         { typeof(char), () => writer.Write((char)obj) },
-                        { typeof(IntPtr), () => 
+                        { typeof(IntPtr), () =>
                             {
                                 writer.Write(((IntPtr)obj).ToInt64());
                             }
@@ -307,7 +306,7 @@ namespace AnySerializer
             // we will need to know the dimensions (above) in order to restore it
             foreach (var item in arrayEnumerable)
             {
-                if (item != null && elementConcreteExtendedType == null)
+                if (item != null && elementConcreteExtendedType is null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
                 WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path, index);
                 index++;
@@ -336,7 +335,7 @@ namespace AnySerializer
             var index = 0;
             foreach (var item in enumerable)
             {
-                if (item != null && elementConcreteExtendedType == null)
+                if (item != null && elementConcreteExtendedType is null)
                     elementConcreteExtendedType = item.GetType().GetExtendedType();
                 WriteObject(writer, item, elementConcreteExtendedType ?? elementExtendedType, currentDepth, path, index);
                 index++;
@@ -366,20 +365,44 @@ namespace AnySerializer
             // write each element
             var dictionary = (IDictionary)obj;
 
-            var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
-            var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
-            ExtendedType valueConcreteExtendedType = null;
-            var index = 0;
-            foreach (DictionaryEntry item in dictionary)
+            if (typeSupport.IsGeneric && typeSupport.GenericArgumentTypes.Any())
             {
-                // write the key
-                WriteObject(writer, item.Key, keyExtendedType, currentDepth, path, index);
-                // write the value
-                if (item.Value != null && valueConcreteExtendedType == null)
-                    valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
-                WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, index);
-                index++;
+                // generic IDictionary<,>
+                var keyExtendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
+                var valueExtendedType = typeSupport.GenericArgumentTypes.Skip(1).First().GetExtendedType();
+                ExtendedType valueConcreteExtendedType = null;
+                var index = 0;
+                foreach (DictionaryEntry item in dictionary)
+                {
+                    // write the key
+                    WriteObject(writer, item.Key, keyExtendedType, currentDepth, path, index);
+                    // write the value
+                    if (item.Value != null && valueConcreteExtendedType is null)
+                        valueConcreteExtendedType = item.Value.GetType().GetExtendedType();
+                    WriteObject(writer, item.Value, valueConcreteExtendedType ?? valueExtendedType, currentDepth, path, index);
+                    index++;
+                }
             }
+            else
+            {
+                // non-generic IDictionary
+                ExtendedType extendedType;
+                if (typeSupport.GenericArgumentTypes.Any())
+                    extendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
+                else
+                    extendedType = typeof(object).GetExtendedType();
+                var index = 0;
+                foreach (KeyValuePair<object, object> item in dictionary)
+                {
+                    // write the key
+                    WriteObject(writer, item.Key, item.Key.GetExtendedType(), currentDepth, path, index);
+                    // write the value
+                    WriteObject(writer, item.Value, item.Value.GetExtendedType(), currentDepth, path, index);
+                    index++;
+                }
+            }
+
+
         }
 
         internal void WriteKeyValueType(BinaryWriter writer, long lengthStartPosition, object obj, ExtendedType typeSupport, int currentDepth, string path)
