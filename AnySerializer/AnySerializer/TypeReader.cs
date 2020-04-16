@@ -250,7 +250,17 @@ namespace AnySerializer
                 }
                 else
                 {
-                    newObj = objectFactory.CreateEmptyObject(destinationTypeSupport.Type, _typeRegistry, arrayDimensions);
+                    // if the destination type is a generic object, but we know its a more specific type then swap types
+                    if (destinationTypeSupport.Type == typeof(object) && objectExtendedType != typeof(object))
+                    {
+                        newObj = objectFactory.CreateEmptyObject(objectExtendedType.Type, _typeRegistry, arrayDimensions);
+                        destinationTypeSupport = objectExtendedType;
+                    }
+                    else
+                    {
+                        // standard case of create object as intended
+                        newObj = objectFactory.CreateEmptyObject(destinationTypeSupport, _typeRegistry, arrayDimensions);
+                    }
                 }
             }
             catch (InvalidOperationException ex)
@@ -493,36 +503,67 @@ namespace AnySerializer
             uint i = 0;
             uint dataLength = 0;
             uint headerLength = 0;
-            var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
-            var keyExtendedType = typeSupports.First();
-            var valueExtendedType = typeSupports.Skip(1).First();
-            Type[] typeArgs = { genericTypes[0], genericTypes[1] };
 
-            var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
-            var newDictionary = Activator.CreateInstance(dictionaryType) as IDictionary;
-
-            while (i < length)
+            if (typeSupport.IsGeneric && typeSupport.GenericArgumentTypes.Any())
             {
-                var key = ReadObject(reader, keyExtendedType, currentDepth, path, ref dataLength, ref headerLength);
-                // increment the size of the data read
-                i += dataLength + headerLength;
-                var value = ReadObject(reader, valueExtendedType, currentDepth, path, ref dataLength, ref headerLength);
-                // increment the size of the data read
-                i += dataLength + headerLength;
-                newDictionary.Add(key, value);
-            }
+                // generic IDictionary<,>
+                var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
+                var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+                var keyExtendedType = typeSupports.First();
+                var valueExtendedType = typeSupports.Skip(1).First();
+                Type[] typeArgs = { genericTypes[0], genericTypes[1] };
 
-            // special case for concurrent dictionaries
-            if (typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+                var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
+                var newDictionary = Activator.CreateInstance(dictionaryType) as IDictionary;
+
+                while (i < length)
+                {
+                    var key = ReadObject(reader, keyExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+                    // increment the size of the data read
+                    i += dataLength + headerLength;
+                    var value = ReadObject(reader, valueExtendedType, currentDepth, path, ref dataLength, ref headerLength);
+                    // increment the size of the data read
+                    i += dataLength + headerLength;
+                    newDictionary.Add(key, value);
+                }
+
+                // special case for concurrent dictionaries
+                if (typeSupport.Type.GetGenericTypeDefinition() == typeof(ConcurrentDictionary<,>))
+                {
+                    dictionaryType = typeof(ConcurrentDictionary<,>).MakeGenericType(typeArgs);
+                    var newConcurrentDictionary = Activator.CreateInstance(dictionaryType, new object[] { newDictionary }) as IDictionary;
+                    newDictionary = newConcurrentDictionary;
+                }
+
+                // return the value
+                return newDictionary;
+            }
+            else
             {
-                dictionaryType = typeof(ConcurrentDictionary<,>).MakeGenericType(typeArgs);
-                var newConcurrentDictionary = Activator.CreateInstance(dictionaryType, new object[] { newDictionary }) as IDictionary;
-                newDictionary = newConcurrentDictionary;
-            }
+                // non-generic IDictionary
+                ExtendedType extendedType;
+                if (typeSupport.GenericArgumentTypes.Any())
+                    extendedType = typeSupport.GenericArgumentTypes.First().GetExtendedType();
+                else
+                    extendedType = typeof(object).GetExtendedType();
 
-            // return the value
-            return newDictionary;
+                var factory = new ObjectFactory();
+                var newDictionary = (IDictionary)factory.CreateEmptyObject(typeSupport);
+
+                while (i < length)
+                {
+                    var key = ReadObject(reader, extendedType, currentDepth, path, ref dataLength, ref headerLength);
+                    // increment the size of the data read
+                    i += dataLength + headerLength;
+                    var value = ReadObject(reader, extendedType, currentDepth, path, ref dataLength, ref headerLength);
+                    // increment the size of the data read
+                    i += dataLength + headerLength;
+                    newDictionary.Add(key, value);
+                }
+
+                // return the value
+                return newDictionary;
+            }
         }
 
         internal object ReadKeyValueType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)

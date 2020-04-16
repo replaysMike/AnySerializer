@@ -1,10 +1,7 @@
-﻿using AnySerializer.Tests.TestObjects;
-using NUnit.Framework;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using TypeSupport;
+using AnySerializer.Tests.TestObjects;
+using NUnit.Framework;
 
 namespace AnySerializer.Tests
 {
@@ -226,6 +223,22 @@ namespace AnySerializer.Tests
             var provider = new SerializerProvider();
             var bytes = provider.Serialize(test);
             var deserializedTest = provider.Deserialize<Dictionary<int, int?>>(bytes);
+
+            CollectionAssert.AreEqual(test, deserializedTest);
+        }
+
+        [Test]
+        public void ShouldDeserialize_NonGenericDictionary()
+        {
+            var test = new NonGenericDictionary {
+                { 1, 100 },
+                { 2, 200 },
+                { 3, 300 },
+                { 4, 400 },
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var deserializedTest = provider.Deserialize<NonGenericDictionary>(bytes);
 
             CollectionAssert.AreEqual(test, deserializedTest);
         }
