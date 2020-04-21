@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using TypeSupport;
+using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer
@@ -162,8 +162,9 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeId GetTypeId(ExtendedType typeSupport)
+        public static TypeId GetTypeId(Type type)
         {
+            var typeSupport = type.GetExtendedType();
             if (typeSupport.IsArray)
                 return TypeId.Array;
 
@@ -222,14 +223,14 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static ExtendedType GetType(TypeId type)
+        public static Type GetType(TypeId type)
         {
             if (!TypeManagement.TypeMapping.Values.Contains(type))
                 throw new InvalidOperationException($"Invalid type specified: {(int)type}");
-            var typeSupport = new ExtendedType(TypeManagement.TypeMapping
+            var typeSupport = TypeManagement.TypeMapping
                 .Where(x => x.Value == type)
                 .Select(x => x.Key)
-                .FirstOrDefault());
+                .FirstOrDefault();
             return typeSupport;
         }
 

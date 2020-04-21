@@ -1,6 +1,5 @@
-﻿using NUnit.Framework;
-using System.IO;
-using TypeSupport.Extensions;
+﻿using System.IO;
+using NUnit.Framework;
 
 namespace AnySerializer.Tests
 {
@@ -58,14 +57,14 @@ namespace AnySerializer.Tests
         private TypeDescriptors CreateTypeDescriptors()
         {
             var typeDescriptors = new TypeDescriptors();
-            typeDescriptors.AddKnownType(typeof(string).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(object).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(short).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(int).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(long).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(double).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(decimal).GetExtendedType());
-            typeDescriptors.AddKnownType(typeof(float).GetExtendedType());
+            typeDescriptors.AddKnownType(typeof(string));
+            typeDescriptors.AddKnownType(typeof(object));
+            typeDescriptors.AddKnownType(typeof(short));
+            typeDescriptors.AddKnownType(typeof(int));
+            typeDescriptors.AddKnownType(typeof(long));
+            typeDescriptors.AddKnownType(typeof(double));
+            typeDescriptors.AddKnownType(typeof(decimal));
+            typeDescriptors.AddKnownType(typeof(float));
             return typeDescriptors;
         }
     }

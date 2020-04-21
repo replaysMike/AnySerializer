@@ -252,7 +252,7 @@ namespace AnySerializer
             ExtendedType objectExtendedType = null;
             if (objectTypeId != TypeId.Struct)
             {
-                objectExtendedType = TypeUtil.GetType(objectTypeId);
+                objectExtendedType = TypeUtil.GetType(objectTypeId).GetExtendedType();
 
                 // does this object map to something expected?
                 if (!TypeUtil.GetTypeId(objectExtendedType).Equals(objectTypeId))

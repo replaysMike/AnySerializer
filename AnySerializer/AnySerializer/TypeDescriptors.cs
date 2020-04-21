@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using TypeSupport;
+using TypeSupport.Extensions;
 
 namespace AnySerializer
 {
@@ -16,6 +16,9 @@ namespace AnySerializer
     /// </summary>
     public class TypeDescriptors
     {
+        /// <summary>
+        /// No type descriptors
+        /// </summary>
         public static TypeDescriptors None { get { return new TypeDescriptors(); } }
 
         private ushort _currentTypeId;
@@ -34,13 +37,14 @@ namespace AnySerializer
         /// Add a type to the type descriptors
         /// </summary>
         /// <param name="type"></param>
-        public ushort AddKnownType(ExtendedType type)
+        public ushort AddKnownType(Type type)
         {
+            var extendedType = type.GetExtendedType();
             var fullName = string.Empty;
-            if (!type.IsConcreteType && type.ConcreteType != null)
-                fullName = type.ConcreteType.AssemblyQualifiedName;
+            if (!extendedType.IsConcreteType && extendedType.ConcreteType != null)
+                fullName = extendedType.ConcreteType.AssemblyQualifiedName;
             else
-                fullName = type.Type.AssemblyQualifiedName;
+                fullName = extendedType.Type.AssemblyQualifiedName;
             var existingType = Types.FirstOrDefault(x => x.FullName.Equals(fullName));
             if (existingType == null)
             {

@@ -3,7 +3,6 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TypeSupport;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer.Tests
@@ -14,53 +13,53 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldTypes_MapCorrectly()
         {
-            Assert.AreEqual(new ExtendedType(typeof(Array)), TypeUtil.GetType(TypeId.Array));
-            Assert.AreEqual(new ExtendedType(typeof(Enum)), TypeUtil.GetType(TypeId.Enum));
-            Assert.AreEqual(new ExtendedType(typeof(bool)), TypeUtil.GetType(TypeId.Bool));
-            Assert.AreEqual(new ExtendedType(typeof(byte)), TypeUtil.GetType(TypeId.Byte));
-            Assert.AreEqual(new ExtendedType(typeof(char)), TypeUtil.GetType(TypeId.Char));
-            Assert.AreEqual(new ExtendedType(typeof(decimal)), TypeUtil.GetType(TypeId.Decimal));
-            Assert.AreEqual(new ExtendedType(typeof(double)), TypeUtil.GetType(TypeId.Double));
-            Assert.AreEqual(new ExtendedType(typeof(float)), TypeUtil.GetType(TypeId.Float));
-            Assert.AreEqual(new ExtendedType(typeof(IDictionary)), TypeUtil.GetType(TypeId.IDictionary));
-            Assert.AreEqual(new ExtendedType(typeof(KeyValuePair<,>)), TypeUtil.GetType(TypeId.KeyValuePair));
-            Assert.AreEqual(new ExtendedType(typeof(IEnumerable)), TypeUtil.GetType(TypeId.IEnumerable));
-            Assert.AreEqual(new ExtendedType(typeof(int)), TypeUtil.GetType(TypeId.Int));
-            Assert.AreEqual(new ExtendedType(typeof(long)), TypeUtil.GetType(TypeId.Long));
-            Assert.AreEqual(new ExtendedType(typeof(object)), TypeUtil.GetType(TypeId.Object));
-            Assert.AreEqual(new ExtendedType(typeof(short)), TypeUtil.GetType(TypeId.Short));
-            Assert.AreEqual(new ExtendedType(typeof(string)), TypeUtil.GetType(TypeId.String));
+            Assert.AreEqual(typeof(Array), TypeUtil.GetType(TypeId.Array));
+            Assert.AreEqual(typeof(Enum), TypeUtil.GetType(TypeId.Enum));
+            Assert.AreEqual(typeof(bool), TypeUtil.GetType(TypeId.Bool));
+            Assert.AreEqual(typeof(byte), TypeUtil.GetType(TypeId.Byte));
+            Assert.AreEqual(typeof(char), TypeUtil.GetType(TypeId.Char));
+            Assert.AreEqual(typeof(decimal), TypeUtil.GetType(TypeId.Decimal));
+            Assert.AreEqual(typeof(double), TypeUtil.GetType(TypeId.Double));
+            Assert.AreEqual(typeof(float), TypeUtil.GetType(TypeId.Float));
+            Assert.AreEqual(typeof(IDictionary), TypeUtil.GetType(TypeId.IDictionary));
+            Assert.AreEqual(typeof(KeyValuePair<,>), TypeUtil.GetType(TypeId.KeyValuePair));
+            Assert.AreEqual(typeof(IEnumerable), TypeUtil.GetType(TypeId.IEnumerable));
+            Assert.AreEqual(typeof(int), TypeUtil.GetType(TypeId.Int));
+            Assert.AreEqual(typeof(long), TypeUtil.GetType(TypeId.Long));
+            Assert.AreEqual(typeof(object), TypeUtil.GetType(TypeId.Object));
+            Assert.AreEqual(typeof(short), TypeUtil.GetType(TypeId.Short));
+            Assert.AreEqual(typeof(string), TypeUtil.GetType(TypeId.String));
         }
 
         [Test]
         public void ExtendedTypeAndType_Should_BeEqual()
         {
-            Assert.AreEqual(new ExtendedType(typeof(bool)), typeof(bool));
+            Assert.AreEqual(new TypeSupport.ExtendedType(typeof(bool)), typeof(bool));
         }
 
         [Test]
         public void ExtendedTypeAndExtendedType_Should_BeEqual()
         {
-            Assert.AreEqual(new ExtendedType(typeof(bool)), new ExtendedType(typeof(bool)));
+            Assert.AreEqual(new TypeSupport.ExtendedType(typeof(bool)), new TypeSupport.ExtendedType(typeof(bool)));
         }
 
         [Test]
         public void ExtendedTypeAndExtendedType_ShouldNot_BeEqual()
         {
-            Assert.AreNotEqual(new ExtendedType(typeof(bool)), new ExtendedType(typeof(int)));
+            Assert.AreNotEqual(new TypeSupport.ExtendedType(typeof(bool)), new TypeSupport.ExtendedType(typeof(int)));
         }
 
         [Test]
         public void Should_CreateNewArray()
         {
-            var test = new ObjectFactory().CreateEmptyObject<byte[]>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<byte[]>();
             Assert.AreEqual(test.GetType(), typeof(byte[]));
         }
 
         [Test]
         public void Should_CreateNewEnumerable()
         {
-            var test = new ObjectFactory().CreateEmptyObject<IEnumerable>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<IEnumerable>();
             var isEnumerable = test is IEnumerable<object>;
             // .Net Core 3+ no longer guarantees this list to be a object[], its now an internal unaccessible type of EmptyPartition
             Assert.IsTrue(isEnumerable);
@@ -69,28 +68,28 @@ namespace AnySerializer.Tests
         [Test]
         public void Should_CreateNewList()
         {
-            var test = new ObjectFactory().CreateEmptyObject<List<int>>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<List<int>>();
             Assert.AreEqual(test.GetType(), typeof(List<int>));
         }
 
         [Test]
         public void Should_CreateNewDictionary()
         {
-            var test = new ObjectFactory().CreateEmptyObject<Dictionary<int, string>>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<Dictionary<int, string>>();
             Assert.AreEqual(test.GetType(), typeof(Dictionary<int, string>));
         }
 
         [Test]
         public void Should_CreateNewString()
         {
-            var test = new ObjectFactory().CreateEmptyObject<string>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<string>();
             Assert.IsNull(test);
         }
 
         [Test]
         public void Should_CreateNewStringUsingInitializer()
         {
-            var test = new ObjectFactory().CreateEmptyObject<string>(() => string.Empty);
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<string>(() => string.Empty);
             Assert.AreEqual(test.GetType(), typeof(string));
             Assert.AreEqual(test, string.Empty);
         }
@@ -98,7 +97,7 @@ namespace AnySerializer.Tests
         [Test]
         public void Should_CreateNewBasicObject()
         {
-            var test = new ObjectFactory().CreateEmptyObject<BasicObject>();
+            var test = new TypeSupport.ObjectFactory().CreateEmptyObject<BasicObject>();
             Assert.AreEqual(test.GetType(), typeof(BasicObject));
         }
 
