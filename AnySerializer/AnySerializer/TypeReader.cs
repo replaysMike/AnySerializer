@@ -21,6 +21,8 @@ namespace AnySerializer
     {
         private readonly Dictionary<ushort, object> _objectReferences;
         private readonly TypeRegistry _typeRegistry;
+        private readonly ObjectFactory _objectFactory = new ObjectFactory();
+
 
         /// <summary>
         /// Read the parent object, and recursively process it's children
@@ -33,7 +35,7 @@ namespace AnySerializer
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
         /// <returns></returns>
-        internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
+        internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
             uint dataLength = 0;
@@ -54,14 +56,14 @@ namespace AnySerializer
             return typeReader.ReadObject(dataReader, typeSupport, currentDepth, string.Empty, ref dataLength, ref headerLength);
         }
 
-        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, uint maxDepth, ICollection<object> ignoreAttributes, TypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
+        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, uint maxDepth, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
         {
             _dataSettings = dataSettings;
             _options = options;
             _maxDepth = maxDepth;
             _ignoreAttributes = ignoreAttributes;
             _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
-            _typeRegistry = typeRegistry;
+            _typeRegistry = ConvertToTypeRegistry(typeRegistry);
             _objectReferences = new Dictionary<ushort, object>();
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>
             {
@@ -69,7 +71,27 @@ namespace AnySerializer
                 { typeof(Enum), new Lazy<ICustomSerializer>(() => new EnumSerializer()) },
                 { typeof(XDocument), new Lazy<ICustomSerializer>(() => new XDocumentSerializer()) },
             };
+        }
 
+        private TypeRegistry ConvertToTypeRegistry(SerializationTypeRegistry typeRegistry)
+        {
+            if (typeRegistry == null)
+                return null;
+            var registry = TypeRegistry.Configure(c => {
+                foreach (var factory in typeRegistry.Factories)
+                {
+                    var newFactory = _objectFactory.CreateEmptyObject<TypeFactory>(factory.Source, factory.Factory);
+                    c.Factories.Add(newFactory);
+                }
+                foreach (var map in typeRegistry.Mappings)
+                {
+                    var newMap = _objectFactory.CreateEmptyObject<TypeMap>();
+                    newMap.Source = map.Source;
+                    newMap.Destination = map.Destination;
+                    c.Mappings.Add(newMap);
+                }
+            });
+            return registry;
         }
 
         /// <summary>
@@ -91,7 +113,6 @@ namespace AnySerializer
         /// <returns></returns>
         internal object ReadObject(BinaryReader reader, ExtendedType typeSupport, int currentDepth, string path, ref uint dataLength, ref uint headerLength)
         {
-            var objectFactory = new ObjectFactory();
             var arrayDimensions = new List<int>();
             var arrayRank = 0;
 
@@ -218,8 +239,8 @@ namespace AnySerializer
                 {
                     // an empty initialized object was written
                     if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
-                        return objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
-                    return objectFactory.CreateEmptyObject(typeSupport.Type, _typeRegistry);
+                        return _objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry);
+                    return _objectFactory.CreateEmptyObject(typeSupport.Type, _typeRegistry);
                 }
             }
             catch (InvalidOperationException ex)
@@ -245,7 +266,7 @@ namespace AnySerializer
             {
                 if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
                 {
-                    newObj = objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, arrayDimensions);
+                    newObj = _objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, arrayDimensions);
                     destinationTypeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
                 }
                 else
@@ -253,13 +274,13 @@ namespace AnySerializer
                     // if the destination type is a generic object, but we know its a more specific type then swap types
                     if (destinationTypeSupport.Type == typeof(object) && objectExtendedType != typeof(object))
                     {
-                        newObj = objectFactory.CreateEmptyObject(objectExtendedType.Type, _typeRegistry, arrayDimensions);
+                        newObj = _objectFactory.CreateEmptyObject(objectExtendedType.Type, _typeRegistry, arrayDimensions);
                         destinationTypeSupport = objectExtendedType;
                     }
                     else
                     {
                         // standard case of create object as intended
-                        newObj = objectFactory.CreateEmptyObject(destinationTypeSupport, _typeRegistry, arrayDimensions);
+                        newObj = _objectFactory.CreateEmptyObject(destinationTypeSupport, _typeRegistry, arrayDimensions);
                     }
                 }
             }
@@ -640,7 +661,15 @@ namespace AnySerializer
                     continue;
 
                 var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, localPath, ref dataLength, ref headerLength);
-                newObj.SetFieldValue(field, fieldValue);
+                try
+                {
+                    newObj.SetFieldValue(field, fieldValue);
+                }
+                catch (FieldAccessException)
+                {
+                    // .net core 3.0+ no longer allows you to set values on static initializers
+                    // see https://github.com/dotnet/runtime/issues/11571 & https://github.com/dotnet/coreclr/pull/20886
+                }
             }
 
             return newObj;

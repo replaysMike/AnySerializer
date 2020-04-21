@@ -40,7 +40,7 @@ namespace AnySerializer
         /// <param name="options">The serializer options</param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, params SerializationTypeMap[] typeMaps)
         {
             return Extensions.SerializerExtensions.Deserialize<T>(bytes, options, typeMaps);
         }
@@ -53,7 +53,7 @@ namespace AnySerializer
         /// <param name="options">The serializer options</param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
+        public static T Deserialize<T>(byte[] bytes, SerializerOptions options, SerializationTypeRegistry typeRegistry)
         {
             return Extensions.SerializerExtensions.Deserialize<T>(bytes, options, typeRegistry);
         }
@@ -78,7 +78,7 @@ namespace AnySerializer
         /// <param name="options">The serializer options</param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns>Deserlized <typeparamref name="T"/></returns>
-        public static object Deserialize(Type type, byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        public static object Deserialize(Type type, byte[] bytes, SerializerOptions options, params SerializationTypeMap[] typeMaps)
         {
             return Extensions.SerializerExtensions.Deserialize(bytes, type, options, typeMaps);
         }

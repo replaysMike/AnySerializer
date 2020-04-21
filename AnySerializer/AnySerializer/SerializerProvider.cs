@@ -160,7 +160,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, params TypeMap[] typeMaps)
+        public T Deserialize<T>(byte[] bytes, params SerializationTypeMap[] typeMaps)
         {
             return Deserialize<T>(bytes, SerializerOptions.None, typeMaps);
         }
@@ -172,7 +172,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, params TypeMap[] typeMaps)
+        public object Deserialize(Type type, byte[] bytes, params SerializationTypeMap[] typeMaps)
         {
             return Deserialize(type, bytes, SerializerOptions.None, typeMaps);
         }
@@ -184,7 +184,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, TypeRegistry typeRegistry)
+        public T Deserialize<T>(byte[] bytes, SerializationTypeRegistry typeRegistry)
         {
             return Deserialize<T>(bytes, SerializerOptions.None, typeRegistry);
         }
@@ -196,7 +196,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, TypeRegistry typeRegistry)
+        public object Deserialize(Type type, byte[] bytes, SerializationTypeRegistry typeRegistry)
         {
             return Deserialize(type, bytes, SerializerOptions.None, typeRegistry);
         }
@@ -327,17 +327,17 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options, params SerializationTypeMap[] typeMaps)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length == 0)
                 return default(T);
 
-            TypeRegistry typeRegistry = null;
+            SerializationTypeRegistry typeRegistry = null;
             if (typeMaps != null && typeMaps.Length > 0)
             {
-                TypeRegistry.Configure((config) =>
+                SerializationTypeRegistry.Configure((config) =>
                 {
                     foreach (var typeMap in typeMaps)
                         config.Mappings.Add(typeMap);
@@ -355,17 +355,17 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, SerializerOptions options, params TypeMap[] typeMaps)
+        public object Deserialize(Type type, byte[] bytes, SerializerOptions options, params SerializationTypeMap[] typeMaps)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
             if (bytes.Length == 0)
                 return null;
 
-            TypeRegistry typeRegistry = null;
+            SerializationTypeRegistry typeRegistry = null;
             if (typeMaps != null && typeMaps.Length > 0)
             {
-                TypeRegistry.Configure((config) =>
+                SerializationTypeRegistry.Configure((config) =>
                 {
                     foreach (var typeMap in typeMaps)
                         config.Mappings.Add(typeMap);
@@ -383,7 +383,7 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options, SerializationTypeRegistry typeRegistry)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
@@ -401,7 +401,7 @@ namespace AnySerializer
         /// <param name="options">The serialization options</param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, SerializerOptions options, TypeRegistry typeRegistry)
+        public object Deserialize(Type type, byte[] bytes, SerializerOptions options, SerializationTypeRegistry typeRegistry)
         {
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));

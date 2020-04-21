@@ -61,7 +61,9 @@ namespace AnySerializer.Tests
         public void Should_CreateNewEnumerable()
         {
             var test = new ObjectFactory().CreateEmptyObject<IEnumerable>();
-            Assert.AreEqual(test.GetType(), typeof(object[]));
+            var isEnumerable = test is IEnumerable<object>;
+            // .Net Core 3+ no longer guarantees this list to be a object[], its now an internal unaccessible type of EmptyPartition
+            Assert.IsTrue(isEnumerable);
         }
 
         [Test]

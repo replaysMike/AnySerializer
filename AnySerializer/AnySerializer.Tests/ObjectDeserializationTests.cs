@@ -251,6 +251,8 @@ namespace AnySerializer.Tests
             Assert.AreEqual(test, testDeserialized);
         }
 
+#if FEATURE_STATIC_INIT_ALLOWED
+        // .Net Core 3.0 fixes a bug that previously allowed static readonly fields to be set via reflection
         [Test]
         public void ShouldDeserialize_StaticInterfaceProperties()
         {
@@ -261,5 +263,6 @@ namespace AnySerializer.Tests
 
             Assert.AreEqual(test, testDeserialized);
         }
+#endif
     }
 }
