@@ -46,7 +46,7 @@ namespace AnySerializer
             if (sourceObject == null)
                 return null;
 
-            var typeSupport = new ExtendedType(sourceObject.GetType());
+            var typeSupport = sourceObject.GetType().GetExtendedType();
 
             // drop any objects we are ignoring by attribute
             if (typeSupport.Attributes.Any(x => ignoreAttributes.Contains(x)))

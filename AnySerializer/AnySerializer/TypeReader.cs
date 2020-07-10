@@ -321,7 +321,7 @@ namespace AnySerializer
                         newObj = ReadKeyValueType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
                         break;
                     case TypeId.Enum:
-                        newObj = ReadValueType(reader, dataLength, new ExtendedType(typeof(Enum)), currentDepth, path);
+                        newObj = ReadValueType(reader, dataLength, typeof(Enum).GetExtendedType(), currentDepth, path);
                         break;
                     case TypeId.Tuple:
                         newObj = ReadTupleType(newObj, reader, dataLength, destinationTypeSupport, currentDepth, path, typeDescriptor);
@@ -395,7 +395,7 @@ namespace AnySerializer
             uint i = arrayStartPosition;
             uint dataLength = 0;
             uint headerLength = 0;
-            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            var elementExtendedType = typeSupport.ElementType.GetExtendedType();
             var array = (Array)newObj;
             var arrayRank = array.Rank;
             var arrayDimensions = new List<int>();
@@ -454,13 +454,13 @@ namespace AnySerializer
             if (enumerableInterface != null)
             {
                 genericType = enumerableInterface.GetGenericArguments().FirstOrDefault();
-                genericExtendedType = new ExtendedType(genericType);
+                genericExtendedType = genericType.GetExtendedType();
             }
             else
             {
                 // use the generic type from the class directly
                 genericType = typeSupport.Type.GetGenericArguments().First();
-                genericExtendedType = new ExtendedType(genericType);
+                genericExtendedType = genericType.GetExtendedType();
             }
 
             var addMethod = typeSupport.Type.GetMethod("Add");
@@ -489,7 +489,7 @@ namespace AnySerializer
             uint dataLength = 0;
             uint headerLength = 0;
             var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+            var typeSupports = genericTypes.Select(x => x.GetExtendedType()).ToList();
             Type tupleType = null;
             if (typeSupport.IsValueTuple)
                 tupleType = TypeSupport.Extensions.TupleExtensions.CreateValueTuple(typeSupports.Select(x => x.Type).ToList());
@@ -529,7 +529,7 @@ namespace AnySerializer
             {
                 // generic IDictionary<,>
                 var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-                var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+                var typeSupports = genericTypes.Select(x => x.GetExtendedType()).ToList();
                 var keyExtendedType = typeSupports.First();
                 var valueExtendedType = typeSupports.Skip(1).First();
                 Type[] typeArgs = { genericTypes[0], genericTypes[1] };
@@ -592,7 +592,7 @@ namespace AnySerializer
             uint dataLength = 0;
             uint headerLength = 0;
             var genericTypes = typeSupport.Type.GetGenericArguments().ToList();
-            var typeSupports = genericTypes.Select(x => new ExtendedType(x)).ToList();
+            var typeSupports = genericTypes.Select(x => x.GetExtendedType()).ToList();
             var keyExtendedType = typeSupports.First();
             var valueExtendedType = typeSupports.Skip(1).First();
 
@@ -617,7 +617,7 @@ namespace AnySerializer
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
                 uint headerLength = 0;
-                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldExtendedType = field.Type;
 
                 if (fieldExtendedType.IsDelegate)
                     continue;
@@ -648,7 +648,7 @@ namespace AnySerializer
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
                 uint headerLength = 0;
-                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldExtendedType = field.Type;
 
                 if (fieldExtendedType.IsDelegate)
                     continue;

@@ -101,7 +101,7 @@ namespace AnySerializer
             if (_typeDescriptors != null && newTypeSupport.ConcreteType != null && newTypeSupport.Type != newTypeSupport.ConcreteType && !newTypeSupport.IsConcreteType)
             {
                 // a special condition for writing anonymous types and types without implementation or concrete type
-                newTypeSupport = new ExtendedType(newTypeSupport.ConcreteType);
+                newTypeSupport = newTypeSupport.ConcreteType.GetExtendedType();
                 isTypeMapped = true;
                 objectTypeId = TypeUtil.GetTypeId(newTypeSupport);
             }
@@ -193,7 +193,7 @@ namespace AnySerializer
                             WriteTupleType(writer, lengthStartPosition, obj, newTypeSupport, currentDepth, path);
                             break;
                         case TypeId.Enum:
-                            WriteValueType(writer, lengthStartPosition, obj, new ExtendedType(typeof(Enum)));
+                            WriteValueType(writer, lengthStartPosition, obj, typeof(Enum).GetExtendedType());
                             break;
                         default:
                             WriteValueType(writer, lengthStartPosition, obj, newTypeSupport);
@@ -289,7 +289,7 @@ namespace AnySerializer
             var arrayEnumerable = (IEnumerable)obj;
             var array = (Array)obj;
 
-            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            var elementExtendedType = typeSupport.ElementType.GetExtendedType();
             ExtendedType elementConcreteExtendedType = null;
             var index = 0;
             // calculate the dimensions of the array
@@ -330,7 +330,7 @@ namespace AnySerializer
                 }
             }
 
-            var elementExtendedType = new ExtendedType(typeSupport.ElementType);
+            var elementExtendedType = typeSupport.ElementType.GetExtendedType();
             ExtendedType elementConcreteExtendedType = null;
             var index = 0;
             foreach (var item in enumerable)
@@ -463,7 +463,7 @@ namespace AnySerializer
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
-                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldExtendedType = field.Type;
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
 
@@ -493,7 +493,7 @@ namespace AnySerializer
             foreach (var field in fields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
-                var fieldExtendedType = new ExtendedType(field.Type);
+                var fieldExtendedType = field.Type;
                 var fieldValue = obj.GetFieldValue(field);
                 fieldExtendedType.SetConcreteTypeFromInstance(fieldValue);
 

@@ -3,6 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TypeSupport.Extensions;
 using static AnySerializer.TypeManagement;
 
 namespace AnySerializer.Tests
@@ -34,19 +35,19 @@ namespace AnySerializer.Tests
         [Test]
         public void ExtendedTypeAndType_Should_BeEqual()
         {
-            Assert.AreEqual(new TypeSupport.ExtendedType(typeof(bool)), typeof(bool));
+            Assert.AreEqual(typeof(bool).GetExtendedType(), typeof(bool));
         }
 
         [Test]
         public void ExtendedTypeAndExtendedType_Should_BeEqual()
         {
-            Assert.AreEqual(new TypeSupport.ExtendedType(typeof(bool)), new TypeSupport.ExtendedType(typeof(bool)));
+            Assert.AreEqual(typeof(bool).GetExtendedType(), typeof(bool).GetExtendedType());
         }
 
         [Test]
         public void ExtendedTypeAndExtendedType_ShouldNot_BeEqual()
         {
-            Assert.AreNotEqual(new TypeSupport.ExtendedType(typeof(bool)), new TypeSupport.ExtendedType(typeof(int)));
+            Assert.AreNotEqual(typeof(bool).GetExtendedType(), typeof(int).GetExtendedType());
         }
 
         [Test]
