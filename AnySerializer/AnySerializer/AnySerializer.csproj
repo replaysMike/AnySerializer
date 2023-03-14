@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net46;net461;net462;net47;net48;net5;net6;net7</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net47;net48;net5;net6;net7</TargetFrameworks>
     <Authors>Michael Brown</Authors>
     <Company>Refactor Software</Company>
     <Description>Serialize and deserialize any object without decoration/attributes.</Description>
@@ -15,6 +15,9 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -24,10 +27,6 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net461' OR '$(TargetFramework)'=='net462'">
-    <DefineConstants>FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
@@ -45,14 +44,7 @@
   <ItemGroup>
     <PackageReference Include="TypeSupport" Version="1.2.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net462' OR '$(TargetFramework)'=='net47' OR '$(TargetFramework)'=='net48' OR '$(TargetFramework)'=='net5' OR '$(TargetFramework)'=='net6' OR '$(TargetFramework)'=='net7'">
-    <PackageReference Include="K4os.Compression.LZ4" PrivateAssets="all">
-      <Version>1.3.5</Version>
-    </PackageReference>
-    <PackageReference Include="K4os.Compression.LZ4.Streams" PrivateAssets="all">
-      <Version>1.3.5</Version>
-    </PackageReference>
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.5" PrivateAssets="all" />
+    <PackageReference Include="K4os.Compression.LZ4.Streams" Version="1.3.5" PrivateAssets="all" />
   </ItemGroup>
 </Project>
