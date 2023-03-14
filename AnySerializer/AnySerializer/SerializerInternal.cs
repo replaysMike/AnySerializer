@@ -34,13 +34,12 @@ namespace AnySerializer
         /// Inspect an object and serialize its contents
         /// </summary>
         /// <param name="sourceObject"></param>
-        /// <param name="currentDepth"></param>
         /// <param name="maxDepth"></param>
-        /// <param name="options">The serialization options</param>
-        /// <param name="objectTree"></param>
+        /// <param name="options"></param>
         /// <param name="ignoreAttributes"></param>
-        /// <param name="path"></param>
+        /// <param name="ignorePropertiesOrPaths"></param>
         /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
         internal byte[] InspectAndSerialize(object sourceObject, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (sourceObject == null)
@@ -145,7 +144,7 @@ namespace AnySerializer
             }
 
             // prepend the type descriptors
-            byte[] newDataBytes = new byte[dataBytes.Length + typeDescriptorBytes.Length];
+            var newDataBytes = new byte[dataBytes.Length + typeDescriptorBytes.Length];
             // copy dataSettings to the front
             newDataBytes[0] = dataBytes[0];
             // copy the type descriptors to the front of dataBytes + 1 (dataSettings is byte-0)

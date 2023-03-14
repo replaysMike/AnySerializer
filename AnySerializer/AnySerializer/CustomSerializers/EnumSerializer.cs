@@ -31,7 +31,11 @@ namespace AnySerializer.CustomSerializers
             if (integralType == typeof(byte))
                 return new [] { (byte)value };
             else if (integralType == typeof(sbyte))
+#if FEATURE_HALF
+                return new[] { (byte)(sbyte)value };
+#else
                 return BitConverter.GetBytes((sbyte)value);
+#endif
             else if (integralType == typeof(short))
                 return BitConverter.GetBytes((short)value);
             else if (integralType == typeof(ushort))

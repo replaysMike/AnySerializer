@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net46;net461;net462;net47;net48</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net45;net46;net461;net462;net47;net48;net6;net7</TargetFrameworks>
     <Authors>Michael Brown</Authors>
     <Company>Refactor Software</Company>
     <Description>Serialize and deserialize any object without decoration/attributes.</Description>
@@ -38,13 +38,17 @@
     <DefineConstants>FEATURE_CUSTOM_VALUETUPLE;FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER;FEATURE_COMPRESSION</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'=='net6' OR '$(TargetFramework)'=='net7'">
+    <DefineConstants>FEATURE_CUSTOM_VALUETUPLE;FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER;FEATURE_COMPRESSION;FEATURE_HALF</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ILRepack.MSBuild.Task.InternalizedRenameSupport" Version="2.0.19" PrivateAssets="all" />
     <PackageReference Include="TypeSupport" Version="1.1.4" PrivateAssets="all" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net461' OR '$(TargetFramework)'=='net462' OR '$(TargetFramework)'=='net47' OR '$(TargetFramework)'=='net48'">
+  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net461' OR '$(TargetFramework)'=='net462' OR '$(TargetFramework)'=='net47' OR '$(TargetFramework)'=='net48' OR '$(TargetFramework)'=='net6' OR '$(TargetFramework)'=='net7'">
     <PackageReference Include="K4os.Compression.LZ4" PrivateAssets="all">
       <Version>1.1.1</Version>
     </PackageReference>

@@ -1,9 +1,8 @@
-﻿using AnySerializer.CustomSerializers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using AnySerializer.CustomSerializers;
 using TypeSupport.Extensions;
 
 namespace AnySerializer
@@ -24,8 +23,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="name">Property or field name</param>
         /// <param name="path">Full path to object</param>
-        /// <param name="options">Comparison options</param>
-        /// <param name="ignorePropertiesOrPaths">List of names or paths to ignore</param>
+        /// <param name="attributes"></param>
         /// <returns></returns>
         protected bool IgnoreObjectName(string name, string path, IEnumerable<CustomAttributeData> attributes = null)
         {

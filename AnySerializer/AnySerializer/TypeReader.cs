@@ -31,9 +31,9 @@ namespace AnySerializer
         /// <param name="typeSupport">The type of the root object</param>
         /// <param name="maxDepth">The max depth tree to process</param>
         /// <param name="options">The serialization options</param>
-        /// <param name="objectTree">Tracks the tree that has been traversed</param>
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
+        /// <param name="ignorePropertiesOrPaths"></param>
         /// <returns></returns>
         internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
         {
@@ -98,19 +98,13 @@ namespace AnySerializer
         /// Read an object recursively
         /// </summary>
         /// <param name="reader"></param>
-        /// <param name="typeSupport">Type type of object being read</param>
-        /// <param name="customSerializers"></param>
+        /// <param name="typeSupport">The type of property being read</param>
         /// <param name="currentDepth"></param>
-        /// <param name="maxDepth"></param>
-        /// <param name="objectReferences"></param>
         /// <param name="path"></param>
-        /// <param name="ignoreAttributes"></param>
-        /// <param name="typeRegistry"></param>
-        /// <param name="typeDescriptors"></param>
-        /// <param name="typeDescriptor"></param>
         /// <param name="dataLength"></param>
         /// <param name="headerLength"></param>
         /// <returns></returns>
+        /// <exception cref="DataFormatException"></exception>
         internal object ReadObject(BinaryReader reader, ExtendedType typeSupport, int currentDepth, string path, ref uint dataLength, ref uint headerLength)
         {
             var arrayDimensions = new List<int>();
@@ -124,15 +118,21 @@ namespace AnySerializer
 
             // ensure we don't go too deep if specified
             if (_maxDepth > 0 && currentDepth >= _maxDepth)
-                return default(object);
+                return default;
 
             // drop any objects we are ignoring by attribute
             if (typeSupport.Attributes.Any(x => _ignoreAttributes.Contains(x)))
-                return default(object);
+                return default;
 
             // for delegate types, return null
             if (typeSupport.IsDelegate)
-                return default(object);
+                return default;
+
+            if (reader.BaseStream.Position >= reader.BaseStream.Length - 1)
+            {
+                // no more data to be read
+                return default;
+            }
 
             // read the object type
             var objectTypeByte = reader.ReadByte();
@@ -450,7 +450,7 @@ namespace AnySerializer
             Type genericType;
             ExtendedType genericExtendedType;
             // if it's a custom class that implements IEnumerable generically, get it's type argument
-            var enumerableInterface = typeSupport.Interfaces.Where(x => x.IsGenericType && x.Name == "IEnumerable`1").FirstOrDefault();
+            var enumerableInterface = typeSupport.Interfaces.FirstOrDefault(x => x.IsGenericType && x.Name == "IEnumerable`1");
             if (enumerableInterface != null)
             {
                 genericType = enumerableInterface.GetGenericArguments().FirstOrDefault();

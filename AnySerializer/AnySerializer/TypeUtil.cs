@@ -31,10 +31,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static ICollection<FieldInfo> GetFields(object obj)
-        {
-            return GetFields(obj, false);
-        }
+        public static ICollection<FieldInfo> GetFields(object obj) => GetFields(obj, false);
 
         /// <summary>
         /// Get all of the fields of an object
@@ -151,10 +148,7 @@ namespace AnySerializer
             }
         }
 
-        public static void SetFieldValue(FieldInfo field, object obj, object valueToSet, string path)
-        {
-            field.SetValue(obj, valueToSet);
-        }
+        public static void SetFieldValue(FieldInfo field, object obj, object valueToSet, string path) => field.SetValue(obj, valueToSet);
 
 
         /// <summary>
@@ -239,73 +233,56 @@ namespace AnySerializer
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeId GetTypeId(byte typeId)
-        {
-            return GetTypeId((TypeId)typeId);
-        }
+        public static TypeId GetTypeId(byte typeId) => GetTypeId((TypeId)typeId);
 
         /// <summary>
         /// Get the type id without special flag bits
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static TypeId GetTypeId(TypeId typeId)
-        {
-            return (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap & ~TypeId.TypeMapped);
-        }
+        public static TypeId GetTypeId(TypeId typeId) => (typeId & ~TypeId.NullValue & ~TypeId.TypeDescriptorMap & ~TypeId.TypeMapped);
 
         /// <summary>
         /// True if the type is a value type
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool IsValueType(TypeId type)
-        {
-            return type == TypeId.Bool
-                || type == TypeId.Byte
-                || type == TypeId.Char
-                || type == TypeId.DateTime
-                || type == TypeId.Decimal
-                || type == TypeId.Double
-                || type == TypeId.Enum
-                || type == TypeId.Float
-                || type == TypeId.Guid
-                || type == TypeId.Int
-                || type == TypeId.Long
-                || type == TypeId.Point
-                || type == TypeId.Short
-                || type == TypeId.String
-                || type == TypeId.TimeSpan;
-        }
+        public static bool IsValueType(TypeId type) =>
+            type == TypeId.Bool
+            || type == TypeId.Byte
+            || type == TypeId.Char
+            || type == TypeId.DateTime
+            || type == TypeId.Decimal
+            || type == TypeId.Double
+            || type == TypeId.Enum
+            || type == TypeId.Float
+            || type == TypeId.Guid
+            || type == TypeId.Int
+            || type == TypeId.Long
+            || type == TypeId.Point
+            || type == TypeId.Short
+            || type == TypeId.String
+            || type == TypeId.TimeSpan;
 
         /// <summary>
         /// True if the value of the type contains a null value
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool IsNullValue(TypeId type)
-        {
-            return ((int)type & (int)TypeId.NullValue) == (int)TypeId.NullValue;
-        }
+        public static bool IsNullValue(TypeId type) => ((int)type & (int)TypeId.NullValue) == (int)TypeId.NullValue;
 
         /// <summary>
         /// True if the value indicates a type descriptor map is stored
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool IsTypeDescriptorMap(TypeId type)
-        {
-            return ((int)type & (int)TypeId.TypeDescriptorMap) == (int)TypeId.TypeDescriptorMap;
-        }
+        public static bool IsTypeDescriptorMap(TypeId type) => ((int)type & (int)TypeId.TypeDescriptorMap) == (int)TypeId.TypeDescriptorMap;
 
         /// <summary>
         /// True if the type is an abstract interface
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static bool IsTypeMapped(TypeId type)
-        {
-            return ((int)type & (int)TypeId.TypeMapped) == (int)TypeId.TypeMapped;
-        }
+        public static bool IsTypeMapped(TypeId type) => ((int)type & (int)TypeId.TypeMapped) == (int)TypeId.TypeMapped;
     }
 }

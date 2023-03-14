@@ -37,6 +37,61 @@ namespace AnySerializer.Tests
             Assert.NotNull(restoredTest);
         }
 
+        [Test]
+        public void ShouldDeserialize_ModifiedExtraPropertyObject()
+        {
+            var test = new ExtraPropertyBase {
+                Property1 = 1,
+                Property2 = 2,
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var restoredTest = provider.Deserialize<ExtraPropertyOne>(bytes);
+
+            Assert.NotNull(bytes);
+            Assert.NotNull(restoredTest);
+            Assert.That(restoredTest.Property1, Is.EqualTo(test.Property1));
+            Assert.That(restoredTest.Property2, Is.EqualTo(test.Property2));
+        }
+
+        [Test]
+        public void ShouldDeserialize_ChangedPropertyOrderObject()
+        {
+            var test = new ChangedPropertyOrderBase {
+                Property1 = 1,
+                Property2 = 2,
+                Property3 = "Test"
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var restoredTest = provider.Deserialize<ChangedPropertyOrderOne>(bytes);
+
+            Assert.NotNull(bytes);
+            Assert.NotNull(restoredTest);
+            Assert.That(restoredTest.Property1, Is.EqualTo(test.Property1));
+            Assert.That(restoredTest.Property2, Is.EqualTo(test.Property2));
+            Assert.That(restoredTest.Property3, Is.EqualTo(test.Property3));
+        }
+
+        // todo: currently can't support missing properties without a more significant refactoring. Saved for a later date.
+        /*[Test]
+        public void ShouldDeserialize_MissingPropertyObject()
+        {
+            var test = new MissingPropertyBase {
+                Property1 = 1,
+                Property2 = 2,
+                Property3 = "Test"
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var restoredTest = provider.Deserialize<MissingPropertyOne>(bytes);
+
+            Assert.NotNull(bytes);
+            Assert.NotNull(restoredTest);
+            Assert.That(restoredTest.Property1, Is.EqualTo(test.Property1));
+            Assert.That(restoredTest.Property3, Is.EqualTo(test.Property3));
+        }*/
+
         private int ManagedObjectSize(object obj)
         {
             unsafe

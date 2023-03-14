@@ -19,7 +19,7 @@ namespace AnySerializer
         /// <summary>
         /// No type descriptors
         /// </summary>
-        public static TypeDescriptors None { get { return new TypeDescriptors(); } }
+        public static TypeDescriptors None => new TypeDescriptors();
 
         private ushort _currentTypeId;
 
@@ -64,20 +64,14 @@ namespace AnySerializer
         /// </summary>
         /// <param name="typeId"></param>
         /// <returns></returns>
-        public TypeDescriptor GetTypeDescriptor(ushort typeId)
-        {
-            return Types.FirstOrDefault(x => x.TypeId == typeId);
-        }
+        public TypeDescriptor GetTypeDescriptor(ushort typeId) => Types.FirstOrDefault(x => x.TypeId == typeId);
 
         /// <summary>
         /// True if the TypeId is in the type descriptor map
         /// </summary>
         /// <param name="typeId"></param>
         /// <returns></returns>
-        public bool Contains(ushort typeId)
-        {
-            return Types.Any(x => x.TypeId == typeId);
-        }
+        public bool Contains(ushort typeId) => Types.Any(x => x.TypeId == typeId);
 
         /// <summary>
         /// Serialize the type descriptors using LZ4 compression
@@ -179,10 +173,7 @@ namespace AnySerializer
             FullName = fullName;
         }
 
-        public override int GetHashCode()
-        {
-            return TypeId;
-        }
+        public override int GetHashCode() => TypeId;
 
         public override bool Equals(object obj)
         {
@@ -190,10 +181,7 @@ namespace AnySerializer
             return TypeId == other.TypeId && FullName.Equals(other.FullName);
         }
 
-        public override string ToString()
-        {
-            return $"{FullName}";
-        }
+        public override string ToString() => $"{FullName}";
 
         public bool Equals(TypeDescriptor other)
         {

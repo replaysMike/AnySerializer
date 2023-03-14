@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
-using TypeSupport;
 
 namespace AnySerializer
 {
@@ -39,20 +38,14 @@ namespace AnySerializer
         /// <param name="obj">The object to serialize</param>
         /// <param name="embedTypes">True to embed concrete types in serialization data (increases size)</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj, bool embedTypes)
-        {
-            return Serialize<T>(obj, embedTypes ? SerializerOptions.EmbedTypes : SerializerOptions.None);
-        }
+        public byte[] Serialize<T>(T obj, bool embedTypes) => Serialize<T>(obj, embedTypes ? SerializerOptions.EmbedTypes : SerializerOptions.None);
 
         /// <summary>
         /// Serialize an object to a byte array
         /// </summary>
         /// <param name="obj">The object to serialize</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj)
-        {
-            return Serialize<T>(obj, SerializerOptions.None);
-        }
+        public byte[] Serialize<T>(T obj) => Serialize<T>(obj, SerializerOptions.None);
 
         /// <summary>
         /// Serialize an object to a byte array
@@ -60,10 +53,7 @@ namespace AnySerializer
         /// <param name="obj">The object to serialize</param>
         /// <param name="ignorePropertiesOrPaths">List of property names or property paths to ignore</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj, params string[] ignorePropertiesOrPaths)
-        {
-            return Serialize<T>(obj, SerializerOptions.None, ignorePropertiesOrPaths);
-        }
+        public byte[] Serialize<T>(T obj, params string[] ignorePropertiesOrPaths) => Serialize<T>(obj, SerializerOptions.None, ignorePropertiesOrPaths);
 
         /// <summary>
         /// Serialize an object to a byte array
@@ -71,10 +61,7 @@ namespace AnySerializer
         /// <param name="obj">The object to serialize</param>
         /// <param name="ignoreProperties">A list expressions that define properties to ignore</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj, params Expression<Func<T, object>>[] ignoreProperties)
-        {
-            return Serialize<T>(obj, SerializerOptions.None, ConvertToPropertyNameList(ignoreProperties));
-        }
+        public byte[] Serialize<T>(T obj, params Expression<Func<T, object>>[] ignoreProperties) => Serialize<T>(obj, SerializerOptions.None, ConvertToPropertyNameList(ignoreProperties));
 
         /// <summary>
         /// Serialize an object to a byte array
@@ -83,10 +70,7 @@ namespace AnySerializer
         /// <param name="options">Serialization options</param>
         /// <param name="ignoreProperties">A list expressions that define properties to ignore</param>
         /// <returns></returns>
-        public byte[] Serialize<T>(T obj, SerializerOptions options, params Expression<Func<T, object>>[] ignoreProperties)
-        {
-            return Serialize<T>(obj, options, ConvertToPropertyNameList(ignoreProperties));
-        }
+        public byte[] Serialize<T>(T obj, SerializerOptions options, params Expression<Func<T, object>>[] ignoreProperties) => Serialize<T>(obj, options, ConvertToPropertyNameList(ignoreProperties));
 
         /// <summary>
         /// Serialize an object to a byte array
@@ -136,10 +120,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="ignorePropertiesOrPaths">List of property names or property paths to ignore</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, params string[] ignorePropertiesOrPaths)
-        {
-            return Deserialize<T>(bytes, SerializerOptions.None, ignorePropertiesOrPaths);
-        }
+        public T Deserialize<T>(byte[] bytes, params string[] ignorePropertiesOrPaths) => Deserialize<T>(bytes, SerializerOptions.None, ignorePropertiesOrPaths);
 
         /// <summary>
         /// Deserialize an object from a byte array
@@ -148,10 +129,7 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="ignoreProperties">A list expressions that define properties to ignore</param>
         /// <returns></returns>
-        public object Deserialize<T>(byte[] bytes, params Expression<Func<T, object>>[] ignoreProperties)
-        {
-            return Deserialize<T>(bytes, SerializerOptions.None, ignoreProperties);
-        }
+        public object Deserialize<T>(byte[] bytes, params Expression<Func<T, object>>[] ignoreProperties) => Deserialize<T>(bytes, SerializerOptions.None, ignoreProperties);
 
         /// <summary>
         /// Deserialize an object from a byte array
@@ -160,22 +138,16 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, params SerializationTypeMap[] typeMaps)
-        {
-            return Deserialize<T>(bytes, SerializerOptions.None, typeMaps);
-        }
+        public T Deserialize<T>(byte[] bytes, params SerializationTypeMap[] typeMaps) => Deserialize<T>(bytes, SerializerOptions.None, typeMaps);
 
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="typeMaps">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, params SerializationTypeMap[] typeMaps)
-        {
-            return Deserialize(type, bytes, SerializerOptions.None, typeMaps);
-        }
+        public object Deserialize(Type type, byte[] bytes, params SerializationTypeMap[] typeMaps) => Deserialize(type, bytes, SerializerOptions.None, typeMaps);
 
         /// <summary>
         /// Deserialize an object from a byte array
@@ -184,22 +156,16 @@ namespace AnySerializer
         /// <param name="bytes"></param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes, SerializationTypeRegistry typeRegistry)
-        {
-            return Deserialize<T>(bytes, SerializerOptions.None, typeRegistry);
-        }
+        public T Deserialize<T>(byte[] bytes, SerializationTypeRegistry typeRegistry) => Deserialize<T>(bytes, SerializerOptions.None, typeRegistry);
 
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="typeRegistry">A list of type mappings</param>
         /// <returns></returns>
-        public object Deserialize(Type type, byte[] bytes, SerializationTypeRegistry typeRegistry)
-        {
-            return Deserialize(type, bytes, SerializerOptions.None, typeRegistry);
-        }
+        public object Deserialize(Type type, byte[] bytes, SerializationTypeRegistry typeRegistry) => Deserialize(type, bytes, SerializerOptions.None, typeRegistry);
 
         /// <summary>
         /// Deserialize an object from a stream
@@ -207,10 +173,7 @@ namespace AnySerializer
         /// <typeparam name="T"></typeparam>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public T Deserialize<T>(Stream stream)
-        {
-            return Deserialize<T>(stream, SerializerOptions.None);
-        }
+        public T Deserialize<T>(Stream stream) => Deserialize<T>(stream, SerializerOptions.None);
 
         /// <summary>
         /// Deserialize an object from a stream
@@ -218,10 +181,7 @@ namespace AnySerializer
         /// <param name="type"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public object Deserialize(Type type, Stream stream)
-        {
-            return Deserialize(type, stream, SerializerOptions.None);
-        }
+        public object Deserialize(Type type, Stream stream) => Deserialize(type, stream, SerializerOptions.None);
 
         /// <summary>
         /// Deserialize an object from a byte array
@@ -229,17 +189,13 @@ namespace AnySerializer
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
         /// <returns></returns>
-        public T Deserialize<T>(byte[] bytes)
-        {
-            return Deserialize<T>(bytes, SerializerOptions.None);
-        }
+        public T Deserialize<T>(byte[] bytes) => Deserialize<T>(bytes, SerializerOptions.None);
 
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
-        /// <param name="ignorePropertiesOrPaths">List of property names or property paths to ignore</param>
         /// <returns></returns>
         public object Deserialize(Type type, byte[] bytes)
         {
@@ -305,7 +261,7 @@ namespace AnySerializer
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
         /// <returns></returns>
@@ -350,7 +306,7 @@ namespace AnySerializer
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
         /// <param name="typeMaps">A list of type mappings</param>
@@ -396,7 +352,7 @@ namespace AnySerializer
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
         /// <param name="typeRegistry">A list of type mappings</param>
@@ -451,10 +407,7 @@ namespace AnySerializer
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
-        public bool Validate(byte[] bytes)
-        {
-            return _validator.Validate(bytes);
-        }
+        public bool Validate(byte[] bytes) => _validator.Validate(bytes);
 
         /// <summary>
         /// Convert an expression of properties to a list of property names

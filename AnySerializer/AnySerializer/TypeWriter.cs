@@ -25,8 +25,9 @@ namespace AnySerializer
         /// <param name="typeSupport"></param>
         /// <param name="maxDepth"></param>
         /// <param name="options">The serialization options</param>
-        /// <param name="objectTree"></param>
         /// <param name="ignoreAttributes"></param>
+        /// <param name="diagnosticLog"></param>
+        /// <param name="ignorePropertiesOrPaths"></param>
         internal static TypeDescriptors Write(BinaryWriter writer, object obj, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, out string diagnosticLog, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var currentDepth = 0;
@@ -84,7 +85,7 @@ namespace AnySerializer
             currentDepth++;
 
             var isTypeMapped = false;
-            TypeId objectTypeId = TypeId.None;
+            var objectTypeId = TypeId.None;
             var newTypeSupport = typeSupport;
             try
             {
@@ -110,7 +111,7 @@ namespace AnySerializer
             if (isTypeMapped && newTypeSupport.Type == typeof(object))
                 isTypeMapped = false;
 
-            byte objectTypeIdByte = (byte)objectTypeId;
+            var objectTypeIdByte = (byte)objectTypeId;
             // if the object is null, indicate so in the type mask
             if (obj == null)
                 objectTypeIdByte |= (byte)TypeId.NullValue;
@@ -142,7 +143,7 @@ namespace AnySerializer
             // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
             // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
             ushort objectReferenceId = 0;
-            bool alreadyMapped = false;
+            var alreadyMapped = false;
             var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
             if (obj != null && !_options.BitwiseHasFlag(SerializerOptions.DisableReferenceTracking))
             {
@@ -516,10 +517,7 @@ namespace AnySerializer
         /// Get the diagnostic log
         /// </summary>
         /// <returns></returns>
-        public string GetDiagnosticLog()
-        {
-            return _debugWriter.ToString();
-        }
+        public string GetDiagnosticLog() => _debugWriter.ToString();
 
         private void WriteDebugBuilder(long pos, ExtendedType typeSupport, TypeId typeId, int currentDepth, string path, int index, int dataLength, ushort objectReferenceId, ushort typeDescriptorId, int hashCode)
         {
