@@ -10,8 +10,7 @@ namespace AnySerializer.Tests
         [Test]
         public void ShouldSerialize_BasicObject()
         {
-            var test = new BasicObject()
-            {
+            var test = new BasicObject() {
                 Id = 1,
                 IsEnabled = true,
                 Description = "Test",
@@ -71,6 +70,26 @@ namespace AnySerializer.Tests
             Assert.That(restoredTest.Property1, Is.EqualTo(test.Property1));
             Assert.That(restoredTest.Property2, Is.EqualTo(test.Property2));
             Assert.That(restoredTest.Property3, Is.EqualTo(test.Property3));
+        }
+
+        [Test]
+        public void ShouldDeserialize_SkipPropertyVersion()
+        {
+            var test = new SkipPropertyVersionObject {
+                Id = 0,
+                Name = "Test",
+                V4Property = "A V4 property"
+            };
+            var provider = new SerializerProvider();
+            var bytes = provider.Serialize(test);
+            var restoredTest = provider.Deserialize<SkipPropertyVersionObject2>(bytes, SerializerOptions.EmbedTypes, new PropertyVersion("v5"));
+
+            Assert.NotNull(bytes);
+            Assert.NotNull(restoredTest);
+            Assert.That(restoredTest.Id, Is.EqualTo(test.Id));
+            Assert.That(restoredTest.Name, Is.EqualTo(test.Name));
+            Assert.That(restoredTest.V4Property, Is.EqualTo(test.V4Property));
+            Assert.That(restoredTest.V5Property, Is.EqualTo(null));
         }
 
         // todo: currently can't support missing properties without a more significant refactoring. Saved for a later date.

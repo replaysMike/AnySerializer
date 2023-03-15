@@ -194,6 +194,15 @@ namespace AnySerializer
         /// <summary>
         /// Deserialize an object from a byte array
         /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="skipPropertyVersions">Provide one or more versions that will indicate properties to skip deserialization on</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, PropertyVersion skipPropertyVersions) => Deserialize<T>(bytes, SerializerOptions.None, skipPropertyVersions);
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
         /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -205,6 +214,24 @@ namespace AnySerializer
                 return null;
 
             return _deserializer.InspectAndDeserialize(type, bytes, Constants.DefaultMaxDepth, SerializerOptions.None, _ignoreAttributes);
+        }
+
+        /// <summary>
+        /// Deserialize an object from a byte array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="bytes"></param>
+        /// <param name="options">The serialization options</param>
+        /// <param name="skipPropertyVersions">Provide one or more versions that will indicate properties to skip deserialization on</param>
+        /// <returns></returns>
+        public T Deserialize<T>(byte[] bytes, SerializerOptions options, PropertyVersion skipPropertyVersions)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
+            if (bytes.Length == 0)
+                return default(T);
+
+            return _deserializer.InspectAndDeserialize<T>(bytes, Constants.DefaultMaxDepth, options, _ignoreAttributes, skipPropertyVersions);
         }
 
         /// <summary>
@@ -230,6 +257,7 @@ namespace AnySerializer
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
+        /// <param name="ignorePropertiesOrPaths"></param>
         /// <returns></returns>
         public T Deserialize<T>(byte[] bytes, SerializerOptions options, params string[] ignorePropertiesOrPaths)
         {
@@ -247,6 +275,7 @@ namespace AnySerializer
         /// <typeparam name="T"></typeparam>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
+        /// <param name="ignoreProperties"></param>
         /// <returns></returns>
         public T Deserialize<T>(byte[] bytes, SerializerOptions options, params Expression<Func<T, object>>[] ignoreProperties)
         {
@@ -264,6 +293,7 @@ namespace AnySerializer
         /// <param name="type"></param>
         /// <param name="bytes"></param>
         /// <param name="options">The serialization options</param>
+        /// <param name="ignorePropertiesOrPaths"></param>
         /// <returns></returns>
         public object Deserialize(Type type, byte[] bytes, SerializerOptions options, params string[] ignorePropertiesOrPaths)
         {

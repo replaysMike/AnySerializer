@@ -22,7 +22,7 @@ namespace AnySerializer
         private readonly Dictionary<ushort, object> _objectReferences;
         private readonly TypeRegistry _typeRegistry;
         private readonly ObjectFactory _objectFactory = new ObjectFactory();
-
+        private PropertyVersion _skipTag = null;
 
         /// <summary>
         /// Read the parent object, and recursively process it's children
@@ -34,8 +34,9 @@ namespace AnySerializer
         /// <param name="ignoreAttributes">Properties/Fields with these attributes will be ignored from processing</param>
         /// <param name="typeRegistry">A registry that contains custom type mappings</param>
         /// <param name="ignorePropertiesOrPaths"></param>
+        /// <param name="skipTag"></param>
         /// <returns></returns>
-        internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null)
+        internal static object Read(BinaryReader reader, ExtendedType typeSupport, uint maxDepth, SerializerOptions options, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry = null, ICollection<string> ignorePropertiesOrPaths = null, PropertyVersion skipTag = null)
         {
             var currentDepth = 0;
             uint dataLength = 0;
@@ -51,18 +52,19 @@ namespace AnySerializer
                 dataReader = Decompress(reader);
             }
 
-            var typeReader = new TypeReader(dataSettings, options, maxDepth, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths);
+            var typeReader = new TypeReader(dataSettings, options, maxDepth, ignoreAttributes, typeRegistry, ignorePropertiesOrPaths, skipTag);
 
             return typeReader.ReadObject(dataReader, typeSupport, currentDepth, string.Empty, ref dataLength, ref headerLength);
         }
 
-        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, uint maxDepth, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null)
+        public TypeReader(SerializerDataSettings dataSettings, SerializerOptions options, uint maxDepth, ICollection<object> ignoreAttributes, SerializationTypeRegistry typeRegistry, ICollection<string> ignorePropertiesOrPaths = null, PropertyVersion skipTag = null)
         {
             _dataSettings = dataSettings;
             _options = options;
             _maxDepth = maxDepth;
             _ignoreAttributes = ignoreAttributes;
             _ignorePropertiesOrPaths = ignorePropertiesOrPaths;
+            _skipTag = skipTag;
             _typeRegistry = ConvertToTypeRegistry(typeRegistry);
             _objectReferences = new Dictionary<ushort, object>();
             _customSerializers = new Dictionary<Type, Lazy<ICustomSerializer>>
@@ -645,6 +647,16 @@ namespace AnySerializer
             var localPath = string.Empty;
             foreach (var field in fields)
             {
+                // if property is marked as skipped then don't process it
+                if (_skipTag != null)
+                {
+                    var skipTagAttribute = field.IsBackingField
+                        ? field.BackedProperty.GetAttribute<PropertyVersionAttribute>()
+                        : field.GetAttribute<PropertyVersionAttribute>();
+                    if (skipTagAttribute != null && _skipTag.Contains(skipTagAttribute.Tag))
+                        continue;
+                }
+
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
                 uint headerLength = 0;
