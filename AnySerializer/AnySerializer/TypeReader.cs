@@ -264,7 +264,7 @@ namespace AnySerializer
             var destinationTypeSupport = typeSupport;
             try
             {
-                if (!string.IsNullOrEmpty(typeDescriptor?.FullName))
+                if (!string.IsNullOrEmpty(typeDescriptor?.FullName) && destinationTypeSupport.Type.AssemblyQualifiedName.Equals(typeDescriptor?.FullName))
                 {
                     newObj = _objectFactory.CreateEmptyObject(typeDescriptor.FullName, _typeRegistry, arrayDimensions);
                     destinationTypeSupport = Type.GetType(typeDescriptor.FullName).GetExtendedType();
@@ -273,9 +273,10 @@ namespace AnySerializer
                 {
                     // if the destination type is a generic object, but we know its a more specific type then swap types
                     if (destinationTypeSupport.Type == typeof(object) && objectExtendedType != typeof(object))
+                    //if (objectExtendedType != typeof(object))
                     {
-                        newObj = _objectFactory.CreateEmptyObject(objectExtendedType.Type, _typeRegistry, arrayDimensions);
                         destinationTypeSupport = objectExtendedType;
+                        newObj = _objectFactory.CreateEmptyObject(objectExtendedType.Type, _typeRegistry, arrayDimensions);
                     }
                     else
                     {
@@ -448,20 +449,25 @@ namespace AnySerializer
 
             // determine what this enumerable enumerates (it's not necessarily the generic argument of the class)
             Type genericType;
-            ExtendedType genericExtendedType;
             // if it's a custom class that implements IEnumerable generically, get it's type argument
             var enumerableInterface = typeSupport.Interfaces.FirstOrDefault(x => x.IsGenericType && x.Name == "IEnumerable`1");
             if (enumerableInterface != null)
             {
                 genericType = enumerableInterface.GetGenericArguments().FirstOrDefault();
-                genericExtendedType = genericType.GetExtendedType();
             }
             else
             {
                 // use the generic type from the class directly
-                genericType = typeSupport.Type.GetGenericArguments().First();
-                genericExtendedType = genericType.GetExtendedType();
+                if (typeSupport.IsGeneric)
+                {
+                    genericType = typeSupport.Type.GetGenericArguments().First();
+                }
+                else
+                {
+                    genericType = typeof(object);
+                }
             }
+            var genericExtendedType = genericType.GetExtendedType();
 
             var addMethod = typeSupport.Type.GetMethod("Add");
             if (addMethod == null)
@@ -475,6 +481,8 @@ namespace AnySerializer
             {
                 var element = ReadObject(reader, genericExtendedType, currentDepth, path, ref dataLength, ref headerLength);
                 // increment the size of the data read
+                if (dataLength + headerLength == 0)
+                    break;
                 i += dataLength + headerLength;
                 addMethod.Invoke(newObj, new[] { element });
             }
@@ -608,11 +616,23 @@ namespace AnySerializer
         internal object ReadStructType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
         {
             // read each property into the object
-            var fields = newObj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic).OrderBy(x => x.Name);
+            var fields = newObj.GetFields(FieldOptions.AllWritable).Where(x => !x.FieldInfo.IsStatic);
+            var orderedFields = fields.OrderBy(x => {
+                var hasAttribute = false;
+                if (x.IsBackingField)
+                    hasAttribute = x.BackedProperty.HasAttribute(typeof(SerializeAsAttribute));
+                else
+                    hasAttribute = x.HasAttribute(typeof(SerializeAsAttribute));
+                if (hasAttribute && x.IsBackingField)
+                    return x.BackedProperty.GetAttribute<SerializeAsAttribute>().Name;
+                else if (hasAttribute)
+                    return x.GetAttribute<SerializeAsAttribute>().Name;
+                return x.Name;
+            });
 
             var rootPath = path;
             var localPath = string.Empty;
-            foreach (var field in fields)
+            foreach (var field in orderedFields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
@@ -639,11 +659,27 @@ namespace AnySerializer
         internal object ReadObjectType(object newObj, BinaryReader reader, uint length, ExtendedType typeSupport, int currentDepth, string path, TypeDescriptor typeDescriptor)
         {
             // read each property into the object
-            var fields = newObj.GetFields(FieldOptions.AllWritable).OrderBy(x => x.Name);
+            var fields = newObj.GetFields(FieldOptions.AllWritable);
+            var orderedFields = fields.OrderBy(x => {
+                var hasAttribute = false;
+                if (x.IsBackingField)
+                    hasAttribute = x.BackedProperty.HasAttribute(typeof(SerializeAsAttribute));
+                else
+                    hasAttribute = x.HasAttribute(typeof(SerializeAsAttribute));
+                if (hasAttribute && x.IsBackingField)
+                    return x.BackedProperty.GetAttribute<SerializeAsAttribute>().Name;
+                else if (hasAttribute)
+                    return x.GetAttribute<SerializeAsAttribute>().Name;
+                return x.Name;
+            });
+
+            ICollection<ExtendedField> sourceFields = new List<ExtendedField>();
+            if (typeDescriptor != null)
+                sourceFields = Type.GetType(typeDescriptor.FullName).GetFields(FieldOptions.AllWritable);
 
             var rootPath = path;
             var localPath = string.Empty;
-            foreach (var field in fields)
+            foreach (var field in orderedFields)
             {
                 localPath = $"{rootPath}.{field.ReflectedType.Name}.{field.Name}";
                 uint dataLength = 0;
@@ -653,12 +689,17 @@ namespace AnySerializer
                 if (fieldExtendedType.IsDelegate)
                     continue;
 
+                // if the source type and destination type have different fields, skip it if the source type doesn't have it
+                if (sourceFields.Any() && !sourceFields.Any(x => x.Name.Equals(field.Name)))
+                    continue;
+
                 // check for ignore attributes
                 if (IgnoreObjectName(field.Name, localPath, field.CustomAttributes))
                     continue;
                 // also check the property for ignore, if this is a auto-backing property
                 if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.ReflectedType.Name}.{field.BackedPropertyName}", field.BackedProperty.CustomAttributes))
                     continue;
+                // check if the source object has this property
 
                 var fieldValue = ReadObject(reader, fieldExtendedType, currentDepth, localPath, ref dataLength, ref headerLength);
                 try

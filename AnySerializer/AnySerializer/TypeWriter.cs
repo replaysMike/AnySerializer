@@ -98,6 +98,10 @@ namespace AnySerializer
 
             // if the object type is not a concrete type, indicate so in the type mask
             isTypeMapped = _typeDescriptors != null && !newTypeSupport.IsConcreteType;
+
+            // this must be enabled to force the type map to be written
+            //isTypeMapped = true;
+
             // also resolve the concrete type as it may require being typemapped
             if (_typeDescriptors != null && newTypeSupport.ConcreteType != null && newTypeSupport.Type != newTypeSupport.ConcreteType && !newTypeSupport.IsConcreteType)
             {
